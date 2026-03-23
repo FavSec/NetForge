@@ -3,486 +3,679 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NetForge — Session Forensics</title>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet">
+<title>NETFORGE // SIGINT WORKSTATION</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;600;700;900&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #0a0c10;
-    --bg2: #0f1118;
-    --bg3: #141720;
-    --bg4: #1b1f2e;
-    --border: rgba(255,255,255,0.07);
-    --border2: rgba(255,255,255,0.13);
-    --text: #d4d8e8;
-    --text2: #7c8099;
-    --text3: #4a4f66;
-    --accent: #4f8ef7;
-    --accent2: #2d5fd4;
-    --green: #2ecc71;
-    --amber: #f0a500;
-    --red: #e74c3c;
-    --purple: #9b59b6;
-    --teal: #1abc9c;
-    --cyan: #00d4ff;
-    --mono: 'JetBrains Mono', monospace;
-    --sans: 'Syne', sans-serif;
-  }
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { background:var(--bg); color:var(--text); font-family:var(--sans); min-height:100vh; overflow-x:hidden; }
+:root {
+  --amber: #ffb000;
+  --amber2: #ff8c00;
+  --amber-dim: #7a5200;
+  --amber-glow: rgba(255,176,0,0.15);
+  --amber-glow2: rgba(255,176,0,0.06);
+  --red: #ff3030;
+  --red-dim: rgba(255,48,48,0.12);
+  --green: #00ff88;
+  --green-dim: rgba(0,255,136,0.1);
+  --cyan: #00d4ff;
+  --cyan-dim: rgba(0,212,255,0.1);
+  --bg: #050608;
+  --bg2: #080a0d;
+  --bg3: #0c0f14;
+  --bg4: #111519;
+  --border: rgba(255,176,0,0.12);
+  --border2: rgba(255,176,0,0.25);
+  --border3: rgba(255,176,0,0.4);
+  --mono: 'Share Tech Mono', monospace;
+  --display: 'Orbitron', monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;}
+body{
+  background:var(--bg);
+  color:var(--amber);
+  font-family:var(--mono);
+  font-size:12px;
+  line-height:1.5;
+}
 
-  /* Scanline overlay */
-  body::after {
-    content:''; position:fixed; inset:0; pointer-events:none; z-index:9999;
-    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
-  }
+/* CRT scanlines + vignette */
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:9998;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.08) 3px,rgba(0,0,0,0.08) 4px);
+}
+body::after{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:9997;
+  background:radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.7) 100%);
+}
 
-  /* === HEADER === */
-  .hdr { display:flex; align-items:center; justify-content:space-between; padding:0 24px; height:52px; border-bottom:1px solid var(--border2); background:var(--bg2); position:sticky; top:0; z-index:100; }
-  .logo { display:flex; align-items:center; gap:10px; }
-  .logo-mark { width:28px; height:28px; background:var(--accent); border-radius:6px; display:flex; align-items:center; justify-content:center; }
-  .logo-mark svg { width:16px; height:16px; }
-  .logo-name { font-size:15px; font-weight:700; letter-spacing:0.04em; color:#fff; }
-  .logo-name span { color:var(--accent); }
-  .hdr-center { display:flex; gap:2px; }
-  .tab-btn { font-family:var(--sans); font-size:12px; font-weight:500; letter-spacing:0.05em; text-transform:uppercase; padding:6px 16px; border-radius:6px; border:none; background:transparent; color:var(--text2); cursor:pointer; transition:all .15s; }
-  .tab-btn.active { background:var(--bg4); color:var(--text); }
-  .tab-btn:hover:not(.active) { color:var(--text); }
-  .hdr-right { display:flex; align-items:center; gap:12px; }
-  .status-dot { width:6px; height:6px; border-radius:50%; background:var(--green); box-shadow:0 0 6px var(--green); animation:pulse 2s ease-in-out infinite; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
-  .status-label { font-family:var(--mono); font-size:11px; color:var(--text2); }
+/* Global scrollbar */
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--amber-dim);border-radius:0;}
 
-  /* === LAYOUT === */
-  .app { display:flex; height:calc(100vh - 52px); }
-  .sidebar { width:260px; flex-shrink:0; border-right:1px solid var(--border); background:var(--bg2); display:flex; flex-direction:column; overflow:hidden; }
-  .main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+/* Blinking cursor animation */
+@keyframes blink{0%,100%{opacity:1}49%{opacity:1}50%{opacity:0}99%{opacity:0}}
+@keyframes flicker{0%,100%{opacity:1}92%{opacity:1}93%{opacity:0.94}96%{opacity:1}97%{opacity:0.97}}
+@keyframes scandown{0%{top:-10%}100%{top:110%}}
+@keyframes boot{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 
-  /* === SIDEBAR === */
-  .sidebar-section { padding:12px 16px; border-bottom:1px solid var(--border); }
-  .sidebar-title { font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text3); font-weight:600; margin-bottom:10px; }
-  .capture-zone { border:1.5px dashed var(--border2); border-radius:10px; padding:20px 12px; text-align:center; cursor:pointer; transition:all .2s; position:relative; }
-  .capture-zone:hover, .capture-zone.drag-over { border-color:var(--accent); background:rgba(79,142,247,0.05); }
-  .capture-zone input { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
-  .capture-icon { font-size:24px; margin-bottom:6px; }
-  .capture-text { font-size:11px; color:var(--text2); line-height:1.5; }
-  .capture-text strong { color:var(--text); display:block; margin-bottom:2px; font-size:12px; }
-  .formats { display:flex; gap:4px; flex-wrap:wrap; margin-top:8px; justify-content:center; }
-  .fmt-badge { font-family:var(--mono); font-size:9px; padding:2px 6px; border-radius:3px; background:var(--bg4); color:var(--accent); border:1px solid rgba(79,142,247,0.2); }
-  .demo-btn { width:100%; margin-top:10px; padding:8px; border-radius:7px; border:1px solid var(--border2); background:var(--bg3); color:var(--text); font-family:var(--sans); font-size:12px; font-weight:500; cursor:pointer; transition:all .15s; }
-  .demo-btn:hover { border-color:var(--accent); color:var(--accent); }
+/* Scan line sweep effect */
+.scanline{position:fixed;left:0;right:0;height:2px;background:linear-gradient(transparent,rgba(255,176,0,0.06),transparent);animation:scandown 8s linear infinite;pointer-events:none;z-index:9996;}
 
-  .filter-input { width:100%; background:var(--bg3); border:1px solid var(--border); border-radius:7px; padding:7px 10px; color:var(--text); font-family:var(--mono); font-size:12px; outline:none; transition:border .15s; }
-  .filter-input:focus { border-color:var(--accent); }
-  .filter-input::placeholder { color:var(--text3); }
+body{animation:flicker 12s ease-in-out infinite;}
 
-  .proto-filters { display:flex; gap:4px; flex-wrap:wrap; margin-top:8px; }
-  .proto-chip { font-family:var(--mono); font-size:10px; padding:3px 8px; border-radius:4px; border:1px solid var(--border); background:transparent; color:var(--text2); cursor:pointer; transition:all .15s; }
-  .proto-chip.active { border-color:var(--accent); color:var(--accent); background:rgba(79,142,247,0.08); }
-  .proto-chip:hover:not(.active) { border-color:var(--border2); color:var(--text); }
+/* ── LAYOUT ── */
+#app{display:grid;grid-template-rows:44px 1fr;height:100vh;animation:boot 0.4s ease;}
+.main-grid{display:grid;grid-template-columns:260px 1fr 280px;height:100%;overflow:hidden;}
 
-  .sessions-list { flex:1; overflow-y:auto; padding:8px; }
-  .sessions-list::-webkit-scrollbar { width:4px; }
-  .sessions-list::-webkit-scrollbar-track { background:transparent; }
-  .sessions-list::-webkit-scrollbar-thumb { background:var(--bg4); border-radius:2px; }
-  .session-item { padding:10px 10px; border-radius:8px; margin-bottom:4px; cursor:pointer; border:1px solid transparent; transition:all .15s; }
-  .session-item:hover { background:var(--bg3); border-color:var(--border); }
-  .session-item.selected { background:var(--bg4); border-color:var(--accent); }
-  .si-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:5px; }
-  .si-proto { font-family:var(--mono); font-size:9px; font-weight:600; padding:2px 6px; border-radius:3px; letter-spacing:0.05em; }
-  .proto-http { background:rgba(46,204,113,0.15); color:var(--green); }
-  .proto-https { background:rgba(79,142,247,0.15); color:var(--accent); }
-  .proto-dns { background:rgba(240,165,0,0.15); color:var(--amber); }
-  .proto-ftp { background:rgba(155,89,182,0.15); color:var(--purple); }
-  .proto-smtp { background:rgba(26,188,156,0.15); color:var(--teal); }
-  .proto-tcp { background:rgba(255,255,255,0.08); color:var(--text2); }
-  .si-time { font-family:var(--mono); font-size:9px; color:var(--text3); }
-  .si-hosts { font-size:11px; color:var(--text); font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:3px; }
-  .si-meta { display:flex; gap:8px; }
-  .si-bytes { font-family:var(--mono); font-size:10px; color:var(--text2); }
-  .si-flags { display:flex; gap:3px; }
-  .si-flag { width:6px; height:6px; border-radius:50%; }
-  .flag-file { background:var(--amber); }
-  .flag-creds { background:var(--red); }
-  .flag-dns { background:var(--purple); }
-  .flag-tls { background:var(--teal); }
+/* ── TOPBAR ── */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 16px;
+  border-bottom:1px solid var(--border2);
+  background:var(--bg2);
+  position:relative;
+  overflow:hidden;
+}
+.topbar::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--amber),transparent);opacity:0.4;}
 
-  /* === MAIN AREA === */
-  .toolbar { display:flex; align-items:center; gap:8px; padding:10px 16px; border-bottom:1px solid var(--border); background:var(--bg2); flex-shrink:0; }
-  .toolbar-btn { display:flex; align-items:center; gap:5px; padding:6px 12px; border-radius:6px; border:1px solid var(--border); background:var(--bg3); color:var(--text2); font-family:var(--sans); font-size:12px; font-weight:500; cursor:pointer; transition:all .15s; white-space:nowrap; }
-  .toolbar-btn:hover { border-color:var(--border2); color:var(--text); }
-  .toolbar-btn.primary { border-color:var(--accent2); background:rgba(79,142,247,0.1); color:var(--accent); }
-  .toolbar-btn.primary:hover { background:rgba(79,142,247,0.2); }
-  .toolbar-sep { width:1px; height:20px; background:var(--border); }
-  .toolbar-stat { font-family:var(--mono); font-size:11px; color:var(--text3); }
-  .toolbar-stat span { color:var(--text2); }
-  .spacer { flex:1; }
+.tb-logo{display:flex;align-items:center;gap:10px;}
+.tb-logo-icon{width:28px;height:28px;border:1px solid var(--amber);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--amber);position:relative;}
+.tb-logo-icon::before{content:'';position:absolute;inset:-3px;border:1px solid var(--amber-dim);}
+.tb-title{font-family:var(--display);font-size:13px;font-weight:700;letter-spacing:0.15em;color:var(--amber);text-shadow:0 0 10px rgba(255,176,0,0.5);}
+.tb-title span{color:var(--amber2);opacity:0.7;}
 
-  /* === PANELS === */
-  .content-area { flex:1; display:flex; overflow:hidden; }
-  .detail-panel { flex:1; overflow:hidden; display:flex; flex-direction:column; }
-  .right-panel { width:320px; border-left:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; flex-shrink:0; }
+.tb-nav{display:flex;gap:1px;}
+.tb-btn{
+  font-family:var(--display);font-size:9px;font-weight:600;letter-spacing:0.12em;
+  padding:6px 14px;border:none;background:transparent;color:var(--amber-dim);
+  cursor:pointer;transition:all .1s;text-transform:uppercase;position:relative;
+  border-left:1px solid var(--border);
+}
+.tb-btn:hover{color:var(--amber);background:var(--amber-glow2);}
+.tb-btn.active{color:var(--amber);background:var(--amber-glow2);}
+.tb-btn.active::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--amber);}
 
-  /* EMPTY STATE */
-  .empty-state { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; color:var(--text3); }
-  .empty-icon { font-size:40px; opacity:0.4; }
-  .empty-title { font-size:14px; font-weight:500; color:var(--text2); }
-  .empty-sub { font-size:12px; text-align:center; max-width:260px; line-height:1.6; }
+.tb-status{display:flex;align-items:center;gap:16px;}
+.tb-clock{font-family:var(--mono);font-size:11px;color:var(--amber-dim);letter-spacing:0.1em;}
+.tb-clock span{color:var(--amber);}
+.tb-indicator{display:flex;align-items:center;gap:6px;font-size:10px;letter-spacing:0.08em;}
+.tb-dot{width:5px;height:5px;border-radius:50%;animation:blink 1.4s ease infinite;}
+.dot-green{background:var(--green);box-shadow:0 0 4px var(--green);}
+.dot-red{background:var(--red);box-shadow:0 0 4px var(--red);}
+.dot-amber{background:var(--amber);box-shadow:0 0 4px var(--amber);}
 
-  /* === DETAIL VIEW === */
-  .detail-tabs { display:flex; gap:0; border-bottom:1px solid var(--border); background:var(--bg2); flex-shrink:0; }
-  .detail-tab { font-family:var(--sans); font-size:11px; font-weight:500; letter-spacing:0.04em; padding:10px 16px; border:none; background:transparent; color:var(--text3); cursor:pointer; border-bottom:2px solid transparent; transition:all .15s; text-transform:uppercase; }
-  .detail-tab.active { color:var(--accent); border-bottom-color:var(--accent); }
-  .detail-tab:hover:not(.active) { color:var(--text2); }
-  .detail-content { flex:1; overflow-y:auto; padding:16px; }
-  .detail-content::-webkit-scrollbar { width:4px; }
-  .detail-content::-webkit-scrollbar-track { background:transparent; }
-  .detail-content::-webkit-scrollbar-thumb { background:var(--bg4); border-radius:2px; }
+/* ── PANEL BASE ── */
+.panel{border-right:1px solid var(--border);background:var(--bg2);display:flex;flex-direction:column;overflow:hidden;}
+.panel-hdr{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 12px;border-bottom:1px solid var(--border2);
+  background:var(--bg3);flex-shrink:0;
+}
+.panel-hdr-label{font-family:var(--display);font-size:9px;font-weight:600;letter-spacing:0.15em;color:var(--amber-dim);text-transform:uppercase;}
+.panel-hdr-label.bright{color:var(--amber);}
+.panel-hdr-val{font-size:10px;color:var(--amber-dim);}
 
-  /* SESSION HEADER CARD */
-  .session-hdr-card { background:var(--bg3); border:1px solid var(--border); border-radius:10px; padding:16px; margin-bottom:12px; }
-  .shc-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
-  .shc-title { font-size:14px; font-weight:600; color:#fff; }
-  .shc-badges { display:flex; gap:6px; }
-  .badge { font-family:var(--mono); font-size:10px; padding:3px 8px; border-radius:4px; font-weight:600; }
-  .badge-green { background:rgba(46,204,113,0.15); color:var(--green); border:1px solid rgba(46,204,113,0.2); }
-  .badge-blue { background:rgba(79,142,247,0.15); color:var(--accent); border:1px solid rgba(79,142,247,0.2); }
-  .badge-amber { background:rgba(240,165,0,0.15); color:var(--amber); border:1px solid rgba(240,165,0,0.2); }
-  .badge-red { background:rgba(231,76,60,0.15); color:var(--red); border:1px solid rgba(231,76,60,0.2); }
-  .shc-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
-  .shc-field { }
-  .shc-label { font-size:10px; text-transform:uppercase; letter-spacing:0.08em; color:var(--text3); margin-bottom:3px; }
-  .shc-value { font-family:var(--mono); font-size:12px; color:var(--text); word-break:break-all; }
-  .shc-value.accent { color:var(--accent); }
-  .shc-value.green { color:var(--green); }
-  .shc-value.red { color:var(--red); }
+/* ── LEFT PANEL ── */
+.left-panel{border-right:1px solid var(--border2);}
 
-  /* META GRID */
-  .meta-section { margin-bottom:14px; }
-  .meta-section-title { font-size:11px; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; color:var(--text3); margin-bottom:8px; padding-bottom:6px; border-bottom:1px solid var(--border); }
-  .meta-grid { display:grid; grid-template-columns:140px 1fr; gap:4px 8px; }
-  .meta-key { font-family:var(--mono); font-size:11px; color:var(--text3); padding:3px 0; align-self:start; }
-  .meta-val { font-family:var(--mono); font-size:11px; color:var(--text); padding:3px 0; word-break:break-all; }
-  .meta-val.highlight { color:var(--amber); }
-  .meta-val.danger { color:var(--red); }
-  .meta-val.good { color:var(--green); }
+.drop-zone{
+  margin:10px;border:1px dashed var(--amber-dim);padding:16px 10px;
+  text-align:center;cursor:pointer;transition:all .15s;position:relative;
+  background:var(--bg);
+}
+.drop-zone:hover,.drop-zone.drag-over{border-color:var(--amber);background:var(--amber-glow2);}
+.drop-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.drop-icon{font-size:20px;margin-bottom:6px;opacity:0.6;}
+.drop-text{font-size:10px;color:var(--amber-dim);letter-spacing:0.04em;}
+.drop-text strong{color:var(--amber);display:block;margin-bottom:2px;font-family:var(--display);font-size:9px;letter-spacing:0.1em;}
+.fmt-row{display:flex;gap:4px;justify-content:center;margin-top:8px;}
+.fmt{font-size:9px;padding:1px 5px;border:1px solid var(--amber-dim);color:var(--amber-dim);}
 
-  /* PAYLOAD VIEWER */
-  .payload-viewer { background:var(--bg); border:1px solid var(--border); border-radius:8px; overflow:hidden; }
-  .pv-header { display:flex; align-items:center; justify-content:space-between; padding:8px 12px; background:var(--bg3); border-bottom:1px solid var(--border); }
-  .pv-title { font-family:var(--mono); font-size:11px; color:var(--text2); }
-  .pv-dir { font-size:10px; padding:2px 8px; border-radius:3px; }
-  .pv-dir.req { background:rgba(240,165,0,0.15); color:var(--amber); }
-  .pv-dir.res { background:rgba(46,204,113,0.15); color:var(--green); }
-  .pv-body { padding:12px; font-family:var(--mono); font-size:11px; line-height:1.7; color:var(--text2); overflow-x:auto; max-height:220px; overflow-y:auto; white-space:pre-wrap; word-break:break-all; }
-  .pv-body::-webkit-scrollbar { width:3px; height:3px; }
-  .pv-body::-webkit-scrollbar-thumb { background:var(--bg4); }
-  .pv-body .key { color:var(--accent); }
-  .pv-body .val { color:var(--green); }
-  .pv-body .method { color:var(--amber); font-weight:600; }
-  .pv-body .status-ok { color:var(--green); font-weight:600; }
-  .pv-body .status-err { color:var(--red); font-weight:600; }
-  .pv-body .comment { color:var(--text3); }
-  .payload-row { margin-bottom:8px; }
+.demo-btn{
+  display:block;width:calc(100% - 20px);margin:0 10px 10px;
+  padding:7px;border:1px solid var(--amber-dim);background:transparent;
+  color:var(--amber-dim);font-family:var(--display);font-size:9px;font-weight:600;
+  letter-spacing:0.1em;cursor:pointer;text-transform:uppercase;transition:all .15s;
+}
+.demo-btn:hover{border-color:var(--amber);color:var(--amber);background:var(--amber-glow2);}
 
-  /* FILES TABLE */
-  .files-table { width:100%; border-collapse:collapse; font-family:var(--mono); font-size:11px; }
-  .files-table th { text-align:left; padding:8px 10px; font-size:10px; text-transform:uppercase; letter-spacing:0.06em; color:var(--text3); border-bottom:1px solid var(--border); }
-  .files-table td { padding:8px 10px; border-bottom:1px solid var(--border); vertical-align:middle; }
-  .files-table tr:last-child td { border-bottom:none; }
-  .files-table tr:hover td { background:var(--bg3); }
-  .file-icon { width:26px; height:26px; border-radius:5px; display:flex; align-items:center; justify-content:center; font-size:12px; margin-right:8px; flex-shrink:0; }
-  .file-row { display:flex; align-items:center; }
-  .file-name { color:var(--text); font-weight:500; }
-  .file-type { color:var(--text3); font-size:10px; }
-  .file-size { color:var(--text2); }
-  .file-hash { color:var(--text3); font-size:10px; }
-  .entropy-bar { width:60px; height:6px; background:var(--bg4); border-radius:3px; overflow:hidden; display:inline-block; vertical-align:middle; margin-right:4px; }
-  .entropy-fill { height:100%; border-radius:3px; transition:width .3s; }
-  .dl-btn { padding:3px 8px; border-radius:4px; border:1px solid var(--border); background:transparent; color:var(--text2); font-family:var(--mono); font-size:10px; cursor:pointer; transition:all .15s; }
-  .dl-btn:hover { border-color:var(--accent); color:var(--accent); }
+.filter-row{padding:6px 10px;border-bottom:1px solid var(--border);}
+.filter-input{
+  width:100%;background:var(--bg);border:1px solid var(--border);
+  padding:5px 8px;color:var(--amber);font-family:var(--mono);font-size:11px;
+  outline:none;transition:border .15s;
+}
+.filter-input:focus{border-color:var(--amber);}
+.filter-input::placeholder{color:var(--amber-dim);}
+.proto-row{display:flex;gap:3px;flex-wrap:wrap;margin-top:6px;}
+.proto-btn{
+  font-family:var(--mono);font-size:9px;padding:2px 6px;
+  border:1px solid var(--border);background:transparent;color:var(--amber-dim);
+  cursor:pointer;transition:all .1s;letter-spacing:0.04em;
+}
+.proto-btn.on{border-color:var(--amber);color:var(--amber);background:var(--amber-glow2);}
+.proto-btn:hover:not(.on){border-color:var(--amber-dim);color:var(--amber);}
 
-  /* === HEX VIEW === */
-  .hex-view { font-family:var(--mono); font-size:11px; line-height:1.9; display:grid; grid-template-columns:60px 1fr 1fr; gap:0 16px; }
-  .hex-offset { color:var(--text3); }
-  .hex-bytes { color:var(--text2); letter-spacing:0.12em; }
-  .hex-bytes .h-red { color:var(--red); }
-  .hex-bytes .h-green { color:var(--green); }
-  .hex-bytes .h-blue { color:var(--accent); }
-  .hex-ascii { color:var(--text3); letter-spacing:0.04em; }
-  .hex-ascii .h-printable { color:var(--teal); }
+/* SESSION LIST */
+.sess-list{flex:1;overflow-y:auto;padding:4px;}
+.sess-item{
+  padding:8px 8px;border:1px solid transparent;margin-bottom:2px;
+  cursor:pointer;transition:all .1s;position:relative;
+}
+.sess-item:hover{border-color:var(--border2);background:var(--amber-glow2);}
+.sess-item.sel{border-color:var(--amber);background:var(--amber-glow);}
+.sess-item.sel::before{content:'▶';position:absolute;left:-1px;top:50%;transform:translateY(-50%);color:var(--amber);font-size:8px;}
+.si-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+.si-proto{font-family:var(--display);font-size:8px;font-weight:600;padding:1px 5px;letter-spacing:0.08em;}
+.proto-HTTP{border:1px solid #00ff88;color:#00ff88;}
+.proto-HTTPS{border:1px solid var(--cyan);color:var(--cyan);}
+.proto-DNS{border:1px solid var(--amber);color:var(--amber);}
+.proto-FTP{border:1px solid #ff6b6b;color:#ff6b6b;}
+.proto-SMTP{border:1px solid #b57bee;color:#b57bee;}
+.proto-TCP{border:1px solid var(--amber-dim);color:var(--amber-dim);}
+.si-time{font-size:9px;color:var(--amber-dim);}
+.si-hosts{font-size:10px;color:var(--amber);letter-spacing:0.02em;margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.si-bottom{display:flex;justify-content:space-between;align-items:center;}
+.si-bytes{font-size:9px;color:var(--amber-dim);}
+.si-flags{display:flex;gap:3px;}
+.si-flag{font-size:8px;padding:0 3px;border:1px solid;}
+.flag-file{color:#ffb000;border-color:#7a5200;}
+.flag-creds{color:var(--red);border-color:rgba(255,48,48,0.3);}
+.flag-dns{color:#b57bee;border-color:rgba(181,123,238,0.3);}
+.flag-tls{color:var(--cyan);border-color:rgba(0,212,255,0.3);}
 
-  /* === RIGHT PANEL === */
-  .rp-header { padding:12px 14px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
-  .rp-title { font-size:12px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; color:var(--text2); }
-  .rp-body { flex:1; overflow-y:auto; padding:12px 14px; }
-  .rp-body::-webkit-scrollbar { width:3px; }
-  .rp-body::-webkit-scrollbar-thumb { background:var(--bg4); }
+/* ── CENTER PANEL ── */
+.center-panel{display:flex;flex-direction:column;overflow:hidden;background:var(--bg);}
 
-  /* TIMELINE */
-  .timeline { position:relative; padding-left:18px; }
-  .timeline::before { content:''; position:absolute; left:6px; top:0; bottom:0; width:1px; background:var(--border2); }
-  .tl-item { position:relative; margin-bottom:14px; }
-  .tl-item::before { content:''; position:absolute; left:-15px; top:5px; width:7px; height:7px; border-radius:50%; border:1.5px solid; }
-  .tl-item.tl-req::before { border-color:var(--amber); background:rgba(240,165,0,0.2); }
-  .tl-item.tl-res::before { border-color:var(--green); background:rgba(46,204,113,0.2); }
-  .tl-item.tl-file::before { border-color:var(--purple); background:rgba(155,89,182,0.2); }
-  .tl-item.tl-dns::before { border-color:var(--teal); background:rgba(26,188,156,0.2); }
-  .tl-item.tl-tls::before { border-color:var(--accent); background:rgba(79,142,247,0.2); }
-  .tl-time { font-family:var(--mono); font-size:10px; color:var(--text3); margin-bottom:2px; }
-  .tl-label { font-size:11px; font-weight:500; color:var(--text); margin-bottom:2px; }
-  .tl-detail { font-family:var(--mono); font-size:10px; color:var(--text2); }
+.cmdbar{
+  display:flex;align-items:center;gap:6px;padding:6px 10px;
+  border-bottom:1px solid var(--border2);background:var(--bg2);flex-shrink:0;
+}
+.cmd-btn{
+  font-family:var(--display);font-size:8px;font-weight:600;letter-spacing:0.1em;
+  padding:5px 12px;border:1px solid var(--border2);background:transparent;
+  color:var(--amber-dim);cursor:pointer;transition:all .1s;text-transform:uppercase;
+  display:flex;align-items:center;gap:5px;
+}
+.cmd-btn:hover{border-color:var(--amber);color:var(--amber);background:var(--amber-glow2);}
+.cmd-btn.primary{border-color:var(--amber);color:var(--amber);}
+.cmd-btn.primary:hover{background:var(--amber-glow);}
+.cmd-btn:disabled{opacity:0.3;cursor:not-allowed;}
+.cmd-sep{width:1px;height:16px;background:var(--border2);}
+.cmd-stat{font-size:9px;color:var(--amber-dim);letter-spacing:0.06em;}
+.cmd-stat b{color:var(--amber);}
+.cmd-space{flex:1;}
 
-  /* ALERTS */
-  .alert-item { display:flex; gap:8px; padding:10px; border-radius:7px; margin-bottom:6px; border:1px solid; }
-  .alert-item.sev-high { background:rgba(231,76,60,0.06); border-color:rgba(231,76,60,0.2); }
-  .alert-item.sev-med { background:rgba(240,165,0,0.06); border-color:rgba(240,165,0,0.2); }
-  .alert-item.sev-low { background:rgba(79,142,247,0.06); border-color:rgba(79,142,247,0.15); }
-  .alert-icon { font-size:13px; flex-shrink:0; margin-top:1px; }
-  .alert-title { font-size:11px; font-weight:600; color:var(--text); margin-bottom:2px; }
-  .alert-desc { font-family:var(--mono); font-size:10px; color:var(--text2); line-height:1.5; }
+/* DETAIL TABS */
+.dtabs{display:flex;border-bottom:1px solid var(--border2);flex-shrink:0;background:var(--bg2);}
+.dtab{
+  font-family:var(--display);font-size:9px;font-weight:600;letter-spacing:0.1em;
+  padding:8px 14px;border:none;background:transparent;color:var(--amber-dim);
+  cursor:pointer;border-right:1px solid var(--border);transition:all .1s;
+  text-transform:uppercase;border-bottom:2px solid transparent;
+}
+.dtab.on{color:var(--amber);border-bottom-color:var(--amber);}
+.dtab:hover:not(.on){color:var(--amber);}
 
-  /* DB VIEW */
-  .db-view { padding:4px 0; }
-  .db-table-name { font-family:var(--mono); font-size:11px; font-weight:600; color:var(--accent); margin-bottom:8px; padding:6px 10px; background:var(--bg3); border-radius:6px; border:1px solid var(--border); }
-  .db-row { display:flex; justify-content:space-between; align-items:center; padding:5px 10px; border-radius:4px; margin-bottom:2px; }
-  .db-row:hover { background:var(--bg3); }
-  .db-col { font-family:var(--mono); font-size:10px; }
-  .db-col.key { color:var(--text3); }
-  .db-col.val { color:var(--text); text-align:right; max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .db-col.val.num { color:var(--teal); }
-  .db-sep { height:1px; background:var(--border); margin:8px 0; }
+.dcontent{flex:1;overflow-y:auto;padding:12px;}
 
-  /* SEARCH DB */
-  .search-bar { display:flex; gap:6px; margin-bottom:14px; }
-  .search-input { flex:1; background:var(--bg3); border:1px solid var(--border); border-radius:7px; padding:8px 12px; color:var(--text); font-family:var(--mono); font-size:12px; outline:none; }
-  .search-input:focus { border-color:var(--accent); }
-  .search-btn { padding:8px 14px; border-radius:7px; border:1px solid var(--accent2); background:rgba(79,142,247,0.1); color:var(--accent); font-family:var(--sans); font-size:12px; font-weight:500; cursor:pointer; transition:all .15s; }
-  .search-btn:hover { background:rgba(79,142,247,0.2); }
+/* EMPTY STATE */
+.empty{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  height:100%;gap:10px;color:var(--amber-dim);
+}
+.empty-ascii{font-size:10px;line-height:1.4;letter-spacing:0.02em;opacity:0.4;text-align:center;}
+.empty-msg{font-family:var(--display);font-size:10px;letter-spacing:0.12em;margin-top:8px;}
+.empty-sub{font-size:10px;color:var(--amber-dim);opacity:0.6;}
 
-  .result-card { background:var(--bg3); border:1px solid var(--border); border-radius:8px; padding:12px; margin-bottom:8px; cursor:pointer; transition:all .15s; }
-  .result-card:hover { border-color:var(--border2); }
-  .rc-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
-  .rc-id { font-family:var(--mono); font-size:10px; color:var(--text3); }
-  .rc-body { font-family:var(--mono); font-size:11px; color:var(--text2); line-height:1.6; }
-  .rc-body .match { color:var(--amber); background:rgba(240,165,0,0.1); border-radius:2px; padding:0 2px; }
+/* SESSION OVERVIEW */
+.ov-banner{
+  border:1px solid var(--border2);padding:10px 12px;margin-bottom:10px;
+  background:var(--bg2);position:relative;overflow:hidden;
+}
+.ov-banner::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--amber);}
+.ov-banner-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;}
+.ov-id{font-family:var(--display);font-size:10px;font-weight:700;letter-spacing:0.12em;color:var(--amber);}
+.ov-badges{display:flex;gap:4px;}
+.badge{font-family:var(--display);font-size:8px;font-weight:600;padding:2px 6px;letter-spacing:0.08em;}
+.badge-ok{border:1px solid var(--green);color:var(--green);}
+.badge-warn{border:1px solid var(--amber);color:var(--amber);}
+.badge-danger{border:1px solid var(--red);color:var(--red);}
+.badge-info{border:1px solid var(--cyan);color:var(--cyan);}
+.ov-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.ov-field{}
+.ov-label{font-size:9px;letter-spacing:0.1em;color:var(--amber-dim);margin-bottom:2px;text-transform:uppercase;}
+.ov-val{font-size:11px;color:var(--amber);}
+.ov-val.dim{color:var(--amber-dim);}
+.ov-val.bright{color:#fff;}
+.ov-val.danger{color:var(--red);}
+.ov-val.good{color:var(--green);}
 
-  /* PROGRESS */
-  .progress-wrap { position:fixed; bottom:20px; right:20px; background:var(--bg3); border:1px solid var(--border2); border-radius:10px; padding:12px 16px; min-width:260px; z-index:1000; box-shadow:0 8px 32px rgba(0,0,0,0.4); }
-  .progress-title { font-size:12px; font-weight:600; color:var(--text); margin-bottom:8px; display:flex; align-items:center; gap:8px; }
-  .progress-bar-wrap { background:var(--bg4); border-radius:4px; height:6px; overflow:hidden; margin-bottom:6px; }
-  .progress-bar { height:100%; background:var(--accent); border-radius:4px; transition:width .3s; }
-  .progress-detail { font-family:var(--mono); font-size:10px; color:var(--text3); }
+.section{margin-bottom:12px;}
+.section-hdr{
+  font-family:var(--display);font-size:9px;font-weight:600;letter-spacing:0.15em;
+  color:var(--amber-dim);padding:4px 0;border-bottom:1px solid var(--border2);
+  margin-bottom:6px;text-transform:uppercase;display:flex;align-items:center;gap:6px;
+}
+.section-hdr::before{content:'//';color:var(--amber-dim);opacity:0.5;}
 
-  /* STATS ROW */
-  .stats-row { display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; margin-bottom:14px; }
-  .stat-card { background:var(--bg3); border:1px solid var(--border); border-radius:8px; padding:12px; }
-  .stat-val { font-family:var(--mono); font-size:20px; font-weight:600; color:#fff; margin-bottom:2px; }
-  .stat-label { font-size:10px; text-transform:uppercase; letter-spacing:0.08em; color:var(--text3); }
-  .stat-delta { font-family:var(--mono); font-size:10px; color:var(--green); }
+.kv-grid{display:grid;grid-template-columns:140px 1fr;gap:2px 8px;}
+.kv-key{font-size:10px;color:var(--amber-dim);padding:2px 0;letter-spacing:0.04em;}
+.kv-val{font-size:10px;color:var(--amber);padding:2px 0;word-break:break-all;}
+.kv-val.danger{color:var(--red);}
+.kv-val.good{color:var(--green);}
+.kv-val.hi{color:#fff;}
 
-  /* HIDDEN */
-  .hidden { display:none !important; }
-  .tab-panel { display:none; }
-  .tab-panel.active { display:block; }
+/* PAYLOAD */
+.pv{border:1px solid var(--border);margin-bottom:8px;background:var(--bg);}
+.pv-hdr{display:flex;justify-content:space-between;padding:5px 10px;background:var(--bg3);border-bottom:1px solid var(--border);}
+.pv-hdr-label{font-family:var(--display);font-size:9px;letter-spacing:0.1em;color:var(--amber-dim);}
+.pv-dir{font-size:9px;padding:1px 6px;letter-spacing:0.06em;}
+.dir-req{border:1px solid var(--amber);color:var(--amber);}
+.dir-res{border:1px solid var(--green);color:var(--green);}
+.pv-body{padding:10px;font-size:11px;line-height:1.7;color:var(--amber-dim);max-height:200px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;}
+.pk{color:var(--cyan);}
+.pv2{color:var(--amber);}
+.pm{color:#ffcc00;font-weight:bold;}
+.ps-ok{color:var(--green);}
+.ps-err{color:var(--red);}
+.pdanger{color:var(--red);}
+
+/* FILES */
+.files-tbl{width:100%;border-collapse:collapse;}
+.files-tbl th{font-family:var(--display);font-size:8px;letter-spacing:0.1em;text-align:left;padding:5px 8px;border-bottom:1px solid var(--border2);color:var(--amber-dim);}
+.files-tbl td{padding:6px 8px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.files-tbl tr:hover td{background:var(--amber-glow2);}
+.files-tbl tr.clickable{cursor:pointer;}
+.file-name-cell{display:flex;align-items:center;gap:6px;}
+.file-ico{font-size:14px;}
+.file-nm{color:var(--amber);font-size:11px;}
+.files-tbl tr.clickable:hover .file-nm{color:#fff;text-decoration:underline;}
+.file-mime{color:var(--amber-dim);font-size:10px;}
+.file-sz{color:var(--amber-dim);font-size:10px;}
+.ent-bar{width:50px;height:4px;background:var(--bg4);display:inline-block;vertical-align:middle;margin-right:4px;border:1px solid var(--border);}
+.ent-fill{height:100%;}
+.ent-val{font-size:10px;}
+.file-hash{color:var(--amber-dim);font-size:9px;letter-spacing:0.04em;}
+.act-btn{
+  font-family:var(--display);font-size:8px;letter-spacing:0.08em;
+  padding:2px 7px;border:1px solid var(--border2);background:transparent;
+  color:var(--amber-dim);cursor:pointer;transition:all .1s;
+}
+.act-btn:hover{border-color:var(--amber);color:var(--amber);}
+
+/* HEX */
+.hex-grid{display:grid;grid-template-columns:52px 1fr 120px;gap:0 12px;font-size:11px;line-height:1.8;}
+.hex-off{color:var(--amber-dim);}
+.hex-b{color:var(--amber);letter-spacing:0.1em;}
+.hex-a{color:var(--amber-dim);letter-spacing:0.04em;}
+.hex-p{color:var(--green);}
+
+/* ── RIGHT PANEL ── */
+.right-panel{border-left:1px solid var(--border2);display:flex;flex-direction:column;overflow:hidden;background:var(--bg2);}
+.rp-tabs{display:flex;border-bottom:1px solid var(--border2);flex-shrink:0;}
+.rp-tab{
+  flex:1;font-family:var(--display);font-size:8px;font-weight:600;letter-spacing:0.1em;
+  padding:7px 4px;border:none;background:transparent;color:var(--amber-dim);
+  cursor:pointer;transition:all .1s;text-transform:uppercase;border-bottom:2px solid transparent;
+  text-align:center;
+}
+.rp-tab.on{color:var(--amber);border-bottom-color:var(--amber);}
+.rp-tab:hover:not(.on){color:var(--amber);}
+.rp-body{flex:1;overflow-y:auto;padding:8px;}
+
+/* TIMELINE */
+.tl-item{padding:6px 0 6px 16px;border-left:1px solid var(--border2);margin-left:5px;position:relative;margin-bottom:2px;}
+.tl-item::before{content:'';position:absolute;left:-4px;top:10px;width:7px;height:7px;border:1px solid;}
+.tl-req::before{border-color:var(--amber);background:rgba(255,176,0,0.2);}
+.tl-res::before{border-color:var(--green);background:rgba(0,255,136,0.15);}
+.tl-file::before{border-color:#b57bee;background:rgba(181,123,238,0.15);}
+.tl-dns::before{border-color:var(--cyan);background:rgba(0,212,255,0.15);}
+.tl-tls::before{border-color:var(--cyan);background:rgba(0,212,255,0.15);}
+.tl-time{font-size:9px;color:var(--amber-dim);margin-bottom:1px;}
+.tl-label{font-size:10px;color:var(--amber);margin-bottom:1px;}
+.tl-detail{font-size:9px;color:var(--amber-dim);}
+
+/* ALERTS */
+.al-item{border:1px solid;padding:8px;margin-bottom:4px;}
+.al-high{border-color:rgba(255,48,48,0.4);background:rgba(255,48,48,0.04);}
+.al-med{border-color:rgba(255,176,0,0.3);background:rgba(255,176,0,0.04);}
+.al-low{border-color:rgba(0,212,255,0.2);background:rgba(0,212,255,0.03);}
+.al-sev{font-family:var(--display);font-size:8px;font-weight:700;letter-spacing:0.1em;margin-bottom:3px;}
+.al-high .al-sev{color:var(--red);}
+.al-med .al-sev{color:var(--amber);}
+.al-low .al-sev{color:var(--cyan);}
+.al-title{font-size:10px;color:var(--amber);margin-bottom:2px;}
+.al-desc{font-size:9px;color:var(--amber-dim);line-height:1.5;}
+
+/* DB TABLE */
+.db-tbl{width:100%;border-collapse:collapse;font-size:10px;}
+.db-tbl th{font-family:var(--display);font-size:8px;letter-spacing:0.08em;text-align:left;padding:4px 8px;border-bottom:1px solid var(--border2);color:var(--amber-dim);}
+.db-tbl td{padding:4px 8px;border-bottom:1px solid var(--border);color:var(--amber);font-size:10px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.db-tbl tr:hover td{background:var(--amber-glow2);}
+.db-section-title{font-family:var(--display);font-size:9px;letter-spacing:0.15em;color:var(--amber);padding:6px 0 4px;border-bottom:1px solid var(--border2);margin-bottom:4px;margin-top:14px;}
+.db-section-title:first-child{margin-top:0;}
+
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px;}
+.stat-box{border:1px solid var(--border2);padding:10px;background:var(--bg);}
+.stat-num{font-family:var(--display);font-size:22px;font-weight:700;color:var(--amber);text-shadow:0 0 10px rgba(255,176,0,0.3);}
+.stat-lbl{font-size:9px;letter-spacing:0.08em;color:var(--amber-dim);margin-top:2px;text-transform:uppercase;}
+.stat-sub{font-size:9px;color:var(--red);margin-top:1px;}
+
+/* SEARCH */
+.search-wrap{max-width:700px;margin:0 auto;padding:20px;}
+.search-hdr{font-family:var(--display);font-size:16px;font-weight:700;letter-spacing:0.15em;color:var(--amber);margin-bottom:4px;text-shadow:0 0 10px rgba(255,176,0,0.4);}
+.search-sub{font-size:10px;color:var(--amber-dim);letter-spacing:0.06em;margin-bottom:16px;}
+.search-row{display:flex;gap:6px;margin-bottom:10px;}
+.search-inp{
+  flex:1;background:var(--bg);border:1px solid var(--border2);
+  padding:8px 12px;color:var(--amber);font-family:var(--mono);font-size:12px;outline:none;
+}
+.search-inp:focus{border-color:var(--amber);}
+.search-inp::placeholder{color:var(--amber-dim);}
+.search-go{
+  font-family:var(--display);font-size:9px;font-weight:600;letter-spacing:0.12em;
+  padding:8px 16px;border:1px solid var(--amber);background:transparent;
+  color:var(--amber);cursor:pointer;transition:all .15s;text-transform:uppercase;
+}
+.search-go:hover{background:var(--amber-glow);}
+.quick-tags{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:20px;}
+.qtag{
+  font-size:9px;padding:2px 8px;border:1px solid var(--border2);
+  color:var(--amber-dim);cursor:pointer;transition:all .1s;background:transparent;
+  font-family:var(--mono);
+}
+.qtag:hover{border-color:var(--amber);color:var(--amber);}
+.result-card{
+  border:1px solid var(--border);padding:10px;margin-bottom:6px;
+  cursor:pointer;transition:all .1s;background:var(--bg2);
+}
+.result-card:hover{border-color:var(--amber);background:var(--amber-glow2);}
+.rc-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.rc-proto{font-family:var(--display);font-size:8px;font-weight:600;letter-spacing:0.1em;padding:2px 6px;border:1px solid var(--amber);color:var(--amber);}
+.rc-score{font-size:9px;color:var(--amber-dim);}
+.rc-host{font-size:11px;color:var(--amber);margin-bottom:4px;}
+.rc-body{font-size:10px;color:var(--amber-dim);line-height:1.6;}
+.match{color:var(--amber);background:rgba(255,176,0,0.1);padding:0 2px;}
+
+/* PROGRESS */
+.progress-wrap{
+  position:fixed;bottom:16px;right:16px;
+  border:1px solid var(--amber);background:var(--bg2);padding:12px 14px;
+  min-width:260px;z-index:1000;
+}
+.progress-wrap::before{content:'// PROCESSING';font-family:var(--display);font-size:8px;letter-spacing:0.15em;color:var(--amber-dim);display:block;margin-bottom:6px;}
+.progress-title{font-size:10px;color:var(--amber);margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+.progress-bar-bg{background:var(--bg4);border:1px solid var(--border);height:4px;overflow:hidden;margin-bottom:4px;}
+.progress-bar{height:100%;background:var(--amber);transition:width .3s;}
+.progress-detail{font-size:9px;color:var(--amber-dim);letter-spacing:0.04em;}
+.hidden{display:none!important;}
+.tab-panel{display:none;}
+.tab-panel.active{display:grid;}
+#tab-database.active{display:block;overflow-y:auto;}
+#tab-search.active{display:flex;justify-content:center;overflow-y:auto;}
+
+/* FILE MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:500;display:flex;align-items:center;justify-content:center;}
+.modal{
+  background:var(--bg2);border:1px solid var(--amber);
+  width:780px;max-width:94vw;max-height:88vh;display:flex;flex-direction:column;
+  overflow:hidden;position:relative;
+}
+.modal::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--amber),transparent);}
+.modal-hdr{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border2);}
+.modal-ico{font-size:18px;}
+.modal-fname{font-family:var(--display);font-size:11px;font-weight:700;letter-spacing:0.1em;color:var(--amber);margin-bottom:2px;}
+.modal-fmeta{font-size:9px;color:var(--amber-dim);display:flex;gap:12px;letter-spacing:0.04em;}
+.modal-close{margin-left:auto;width:26px;height:26px;border:1px solid var(--border2);background:transparent;color:var(--amber-dim);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .1s;}
+.modal-close:hover{border-color:var(--amber);color:var(--amber);}
+.modal-tabs{display:flex;border-bottom:1px solid var(--border2);}
+.modal-tab{font-family:var(--display);font-size:9px;letter-spacing:0.1em;padding:7px 14px;border:none;background:transparent;color:var(--amber-dim);cursor:pointer;border-bottom:2px solid transparent;transition:all .1s;text-transform:uppercase;}
+.modal-tab.on{color:var(--amber);border-bottom-color:var(--amber);}
+.modal-pane{flex:1;overflow-y:auto;padding:14px;display:none;}
+.modal-pane.on{display:block;}
+.modal-footer{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;border-top:1px solid var(--border2);}
+.modal-footer-meta{font-size:9px;color:var(--amber-dim);display:flex;gap:14px;}
+
+/* PDF preview */
+.pdf-page{border:1px solid var(--border);padding:14px;margin-bottom:8px;background:var(--bg);}
+.pdf-pg-num{font-size:8px;color:var(--amber-dim);letter-spacing:0.1em;margin-bottom:6px;font-family:var(--display);}
+.pdf-heading{font-family:var(--display);font-size:11px;font-weight:600;letter-spacing:0.08em;color:var(--amber);margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--border2);}
+.pdf-body{font-size:10px;color:var(--amber-dim);line-height:1.7;}
+.pdf-tbl{width:100%;border-collapse:collapse;margin:8px 0;font-size:10px;}
+.pdf-tbl th{text-align:left;padding:4px 8px;border-bottom:1px solid var(--border2);color:var(--amber-dim);font-family:var(--display);font-size:8px;letter-spacing:0.08em;}
+.pdf-tbl td{padding:4px 8px;border-bottom:1px solid var(--border);color:var(--amber);}
+
+/* CSV preview */
+.csv-warn{font-size:9px;color:var(--amber);padding:6px 10px;border:1px solid rgba(255,176,0,0.3);margin-bottom:8px;background:rgba(255,176,0,0.04);}
+.csv-tbl{width:100%;border-collapse:collapse;font-size:10px;}
+.csv-tbl th{text-align:left;padding:4px 8px;background:var(--bg3);color:var(--amber-dim);border-bottom:1px solid var(--border2);font-family:var(--display);font-size:8px;letter-spacing:0.06em;position:sticky;top:0;}
+.csv-tbl td{padding:4px 8px;border-bottom:1px solid var(--border);color:var(--amber);}
+.csv-tbl td.pii{color:var(--red);}
+.csv-tbl tr:nth-child(even) td{background:rgba(255,176,0,0.02);}
+
+/* Strings */
+.str-line{display:flex;gap:10px;padding:2px 0;border-bottom:1px solid var(--border);font-size:10px;line-height:1.8;}
+.str-off{color:var(--amber-dim);min-width:50px;}
+.str-v{color:var(--amber);word-break:break-all;}
+.str-url{color:var(--cyan);}
+.str-email{color:var(--amber2);}
+.str-ip{color:var(--green);}
+.str-cred{color:var(--red);}
+
+/* Hashes */
+.hash-ent-bar{height:8px;background:var(--bg4);border:1px solid var(--border);overflow:hidden;margin:6px 0;}
+.hash-ent-fill{height:100%;transition:width .4s;}
 </style>
 </head>
 <body>
+<div class="scanline"></div>
+<div id="app">
 
-<!-- HEADER -->
-<header class="hdr">
-  <div class="logo">
-    <div class="logo-mark">
-      <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M2 4L8 2L14 4V8C14 11.5 11 13.5 8 14.5C5 13.5 2 11.5 2 8V4Z" stroke="white" stroke-width="1.2" fill="none"/>
-        <path d="M5.5 8L7 9.5L10.5 6" stroke="white" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    </div>
-    <span class="logo-name">Net<span>Forge</span></span>
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="tb-logo">
+    <div class="tb-logo-icon">⬡</div>
+    <div class="tb-title">NETFORGE<span> // v2.0</span></div>
   </div>
-  <div class="hdr-center">
-    <button class="tab-btn active" onclick="switchTab('capture')">Capture</button>
-    <button class="tab-btn" onclick="switchTab('database')">Database</button>
-    <button class="tab-btn" onclick="switchTab('search')">Search</button>
+  <div class="tb-nav">
+    <button class="tb-btn active" onclick="switchTab('capture')">CAPTURE</button>
+    <button class="tb-btn" onclick="switchTab('database')">DATABASE</button>
+    <button class="tb-btn" onclick="switchTab('search')">SEARCH</button>
   </div>
-  <div class="hdr-right">
-    <div class="status-dot" id="status-dot"></div>
-    <span class="status-label" id="status-label">READY</span>
+  <div class="tb-status">
+    <div class="tb-clock">UTC <span id="clock">--:--:--</span></div>
+    <div class="tb-indicator"><div class="tb-dot dot-green"></div>BACKEND</div>
+    <div class="tb-indicator"><div class="tb-dot dot-amber" id="status-dot"></div><span id="status-label">READY</span></div>
   </div>
-</header>
-
-<!-- ===================== CAPTURE TAB ===================== -->
-<div id="tab-capture" class="app tab-panel active">
-  <!-- SIDEBAR -->
-  <aside class="sidebar">
-    <div class="sidebar-section">
-      <div class="sidebar-title">Load Capture</div>
-      <div class="capture-zone" id="drop-zone">
-        <input type="file" accept=".pcap,.pcapng,.cap,.log,.json" multiple id="file-input" onchange="handleFileUpload(this.files)">
-        <div class="capture-icon">📡</div>
-        <div class="capture-text">
-          <strong>Drop capture file</strong>
-          or click to browse
-        </div>
-        <div class="formats">
-          <span class="fmt-badge">.pcap</span>
-          <span class="fmt-badge">.pcapng</span>
-          <span class="fmt-badge">.cap</span>
-          <span class="fmt-badge">.log</span>
-        </div>
-      </div>
-      <button class="demo-btn" onclick="loadDemoData()">⚡ Load Demo Capture</button>
-    </div>
-
-    <div class="sidebar-section">
-      <div class="sidebar-title">Filter</div>
-      <input class="filter-input" type="text" placeholder="ip, port, host, proto..." id="filter-input" oninput="applyFilter()">
-      <div class="proto-filters">
-        <button class="proto-chip active" onclick="toggleProto(this,'ALL')">ALL</button>
-        <button class="proto-chip" onclick="toggleProto(this,'HTTP')">HTTP</button>
-        <button class="proto-chip" onclick="toggleProto(this,'HTTPS')">TLS</button>
-        <button class="proto-chip" onclick="toggleProto(this,'DNS')">DNS</button>
-        <button class="proto-chip" onclick="toggleProto(this,'FTP')">FTP</button>
-        <button class="proto-chip" onclick="toggleProto(this,'SMTP')">SMTP</button>
-      </div>
-    </div>
-
-    <div class="sessions-list" id="sessions-list">
-      <div style="padding:20px 10px; text-align:center; color:var(--text3); font-size:12px;">
-        Load a capture file to see sessions
-      </div>
-    </div>
-  </aside>
-
-  <!-- MAIN -->
-  <main class="main">
-    <div class="toolbar">
-      <button class="toolbar-btn primary" onclick="runAnalysis()" id="run-btn" disabled>
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 2L10 6L3 10V2Z" fill="currentColor"/></svg>
-        Reassemble All
-      </button>
-      <button class="toolbar-btn" onclick="exportData()" id="export-btn" disabled>
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1V8M3 5L6 8L9 5M2 10H10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        Export JSON
-      </button>
-      <div class="toolbar-sep"></div>
-      <span class="toolbar-stat">Sessions: <span id="stat-sessions">0</span></span>
-      <span class="toolbar-stat">Files extracted: <span id="stat-files">0</span></span>
-      <span class="toolbar-stat">Alerts: <span id="stat-alerts" style="color:var(--red)">0</span></span>
-      <div class="spacer"></div>
-      <button class="toolbar-btn" onclick="clearAll()">Clear</button>
-    </div>
-
-    <div class="content-area">
-      <!-- DETAIL PANEL -->
-      <div class="detail-panel">
-        <div id="empty-detail" class="empty-state">
-          <div class="empty-icon">🔬</div>
-          <div class="empty-title">No session selected</div>
-          <div class="empty-sub">Load a capture file and select a session to begin forensic analysis</div>
-        </div>
-        <div id="session-detail" class="hidden" style="display:flex;flex-direction:column;height:100%;overflow:hidden;">
-          <div class="detail-tabs">
-            <button class="detail-tab active" onclick="switchDetailTab('overview')">Overview</button>
-            <button class="detail-tab" onclick="switchDetailTab('payload')">Payload</button>
-            <button class="detail-tab" onclick="switchDetailTab('files')">Files</button>
-            <button class="detail-tab" onclick="switchDetailTab('hex')">Hex</button>
-          </div>
-          <div class="detail-content" id="detail-overview"></div>
-          <div class="detail-content hidden" id="detail-payload"></div>
-          <div class="detail-content hidden" id="detail-files"></div>
-          <div class="detail-content hidden" id="detail-hex"></div>
-        </div>
-      </div>
-
-      <!-- RIGHT PANEL -->
-      <div class="right-panel" id="right-panel">
-        <div class="rp-header">
-          <span class="rp-title" id="rp-title">Timeline</span>
-          <button class="toolbar-btn" style="padding:3px 8px;font-size:10px;" onclick="toggleRpView()" id="rp-toggle">Alerts</button>
-        </div>
-        <div class="rp-body" id="rp-body">
-          <div style="color:var(--text3);font-size:12px;text-align:center;padding:20px 0;">Select a session</div>
-        </div>
-      </div>
-    </div>
-  </main>
 </div>
 
-<!-- ===================== DATABASE TAB ===================== -->
-<div id="tab-database" class="app tab-panel" style="flex-direction:column;overflow-y:auto;">
-  <div style="padding:20px;max-width:1100px;margin:0 auto;width:100%;">
-    <div class="stats-row" id="db-stats">
-      <div class="stat-card"><div class="stat-val" id="db-stat-sessions">0</div><div class="stat-label">Sessions indexed</div></div>
-      <div class="stat-card"><div class="stat-val" id="db-stat-files">0</div><div class="stat-label">Files extracted</div></div>
-      <div class="stat-card"><div class="stat-val" id="db-stat-hosts">0</div><div class="stat-label">Unique hosts</div></div>
-      <div class="stat-card"><div class="stat-val" id="db-stat-alerts">0</div><div class="stat-label">Alerts raised</div><div class="stat-delta" id="db-stat-high" style="color:var(--red);"></div></div>
+<!-- ===== CAPTURE TAB ===== -->
+<div id="tab-capture" class="main-grid tab-panel active">
+
+  <!-- LEFT: session list -->
+  <div class="panel left-panel">
+    <div class="panel-hdr">
+      <span class="panel-hdr-label bright">SESSION FEED</span>
+      <span class="panel-hdr-val" id="sess-count">0 SESSIONS</span>
     </div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+    <div class="drop-zone" id="drop-zone">
+      <input type="file" accept=".pcap,.pcapng,.cap,.log" multiple id="file-input" onchange="handleFileUpload(this.files)">
+      <div class="drop-icon">📡</div>
+      <div class="drop-text"><strong>DROP CAPTURE FILE</strong>or click to browse</div>
+      <div class="fmt-row">
+        <span class="fmt">.pcap</span><span class="fmt">.pcapng</span><span class="fmt">.cap</span>
+      </div>
+    </div>
+    <button class="demo-btn" onclick="loadDemoData()">⚡ LOAD DEMO CAPTURE</button>
+
+    <div class="filter-row">
+      <input class="filter-input" type="text" placeholder="FILTER: ip / port / host / proto" id="filter-input" oninput="applyFilter()">
+      <div class="proto-row">
+        <button class="proto-btn on" onclick="toggleProto(this,'ALL')">ALL</button>
+        <button class="proto-btn" onclick="toggleProto(this,'HTTP')">HTTP</button>
+        <button class="proto-btn" onclick="toggleProto(this,'HTTPS')">TLS</button>
+        <button class="proto-btn" onclick="toggleProto(this,'DNS')">DNS</button>
+        <button class="proto-btn" onclick="toggleProto(this,'FTP')">FTP</button>
+        <button class="proto-btn" onclick="toggleProto(this,'SMTP')">SMTP</button>
+      </div>
+    </div>
+
+    <div class="sess-list" id="sessions-list">
+      <div style="padding:20px;text-align:center;color:var(--amber-dim);font-size:10px;letter-spacing:0.06em;">AWAITING CAPTURE DATA</div>
+    </div>
+  </div>
+
+  <!-- CENTER: detail -->
+  <div class="center-panel">
+    <div class="cmdbar">
+      <button class="cmd-btn primary" id="run-btn" onclick="runAnalysis()" disabled>▶ REASSEMBLE ALL</button>
+      <button class="cmd-btn" id="export-btn" onclick="exportData()" disabled>↓ EXPORT JSON</button>
+      <div class="cmd-sep"></div>
+      <span class="cmd-stat">SESSIONS <b id="stat-sessions">0</b></span>
+      <span class="cmd-stat">FILES <b id="stat-files">0</b></span>
+      <span class="cmd-stat">ALERTS <b id="stat-alerts" style="color:var(--red)">0</b></span>
+      <div class="cmd-space"></div>
+      <button class="cmd-btn" onclick="clearAll()">✕ CLEAR</button>
+    </div>
+
+    <div id="empty-detail" style="flex:1;display:flex;">
+      <div class="empty">
+        <div class="empty-ascii">
+ ███╗   ██╗███████╗████████╗
+ ████╗  ██║██╔════╝╚══██╔══╝
+ ██╔██╗ ██║█████╗     ██║
+ ██║╚██╗██║██╔══╝     ██║
+ ██║ ╚████║███████╗   ██║
+ ╚═╝  ╚═══╝╚══════╝   ╚═╝</div>
+        <div class="empty-msg">FORGE // SESSION ANALYST</div>
+        <div class="empty-sub">LOAD A CAPTURE FILE AND SELECT A SESSION</div>
+      </div>
+    </div>
+
+    <div id="session-detail" class="hidden" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+      <div class="dtabs">
+        <button class="dtab on" onclick="switchDetailTab('overview')">OVERVIEW</button>
+        <button class="dtab" onclick="switchDetailTab('payload')">PAYLOAD</button>
+        <button class="dtab" onclick="switchDetailTab('files')">FILES</button>
+        <button class="dtab" onclick="switchDetailTab('hex')">HEX DUMP</button>
+      </div>
+      <div class="dcontent" id="detail-overview"></div>
+      <div class="dcontent hidden" id="detail-payload"></div>
+      <div class="dcontent hidden" id="detail-files"></div>
+      <div class="dcontent hidden" id="detail-hex"></div>
+    </div>
+  </div>
+
+  <!-- RIGHT: timeline/alerts -->
+  <div class="right-panel">
+    <div class="rp-tabs">
+      <button class="rp-tab on" onclick="switchRp('timeline',this)">TIMELINE</button>
+      <button class="rp-tab" onclick="switchRp('alerts',this)">ALERTS</button>
+      <button class="rp-tab" onclick="switchRp('dns',this)">DNS</button>
+    </div>
+    <div class="rp-body" id="rp-body">
+      <div style="padding:20px;text-align:center;color:var(--amber-dim);font-size:9px;letter-spacing:0.08em;">SELECT A SESSION</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DATABASE TAB ===== -->
+<div id="tab-database" class="tab-panel" style="height:calc(100vh - 44px);">
+  <div style="padding:16px;max-width:1100px;margin:0 auto;">
+    <div style="font-family:var(--display);font-size:11px;font-weight:700;letter-spacing:0.2em;color:var(--amber);margin-bottom:14px;text-shadow:0 0 10px rgba(255,176,0,0.4);">// DATABASE INDEX</div>
+    <div class="stat-grid">
+      <div class="stat-box"><div class="stat-num" id="db-stat-sessions">0</div><div class="stat-lbl">SESSIONS INDEXED</div></div>
+      <div class="stat-box"><div class="stat-num" id="db-stat-files">0</div><div class="stat-lbl">FILES EXTRACTED</div></div>
+      <div class="stat-box"><div class="stat-num" id="db-stat-hosts">0</div><div class="stat-lbl">UNIQUE HOSTS</div></div>
+      <div class="stat-box"><div class="stat-num" id="db-stat-alerts">0</div><div class="stat-lbl">ALERTS RAISED</div><div class="stat-sub" id="db-stat-high"></div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
       <div>
-        <div class="meta-section-title">sessions</div>
-        <div id="db-sessions-table" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;">
-          <div style="padding:30px;text-align:center;color:var(--text3);font-size:12px;">No data — load a capture first</div>
-        </div>
+        <div class="db-section-title">SESSIONS</div>
+        <div id="db-sessions-table" style="border:1px solid var(--border);background:var(--bg);"><div style="padding:20px;text-align:center;color:var(--amber-dim);font-size:10px;">NO DATA</div></div>
       </div>
       <div>
-        <div class="meta-section-title">extracted_files</div>
-        <div id="db-files-table" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;">
-          <div style="padding:30px;text-align:center;color:var(--text3);font-size:12px;">No data</div>
-        </div>
+        <div class="db-section-title">EXTRACTED FILES</div>
+        <div id="db-files-table" style="border:1px solid var(--border);background:var(--bg);"><div style="padding:20px;text-align:center;color:var(--amber-dim);font-size:10px;">NO DATA</div></div>
       </div>
       <div>
-        <div class="meta-section-title">dns_queries</div>
-        <div id="db-dns-table" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;">
-          <div style="padding:30px;text-align:center;color:var(--text3);font-size:12px;">No data</div>
-        </div>
+        <div class="db-section-title">DNS QUERIES</div>
+        <div id="db-dns-table" style="border:1px solid var(--border);background:var(--bg);"><div style="padding:20px;text-align:center;color:var(--amber-dim);font-size:10px;">NO DATA</div></div>
       </div>
       <div>
-        <div class="meta-section-title">alerts</div>
-        <div id="db-alerts-table" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;">
-          <div style="padding:30px;text-align:center;color:var(--text3);font-size:12px;">No data</div>
-        </div>
+        <div class="db-section-title">ALERTS</div>
+        <div id="db-alerts-table" style="border:1px solid var(--border);background:var(--bg);"><div style="padding:20px;text-align:center;color:var(--amber-dim);font-size:10px;">NO DATA</div></div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ===================== SEARCH TAB ===================== -->
-<div id="tab-search" class="app tab-panel" style="flex-direction:column;align-items:center;overflow-y:auto;">
-  <div style="padding:30px 20px;max-width:760px;width:100%;">
-    <div style="font-size:22px;font-weight:700;color:#fff;margin-bottom:4px;">Search Database</div>
-    <div style="font-size:13px;color:var(--text3);margin-bottom:24px;">Query sessions, files, hosts, credentials, and metadata</div>
-    <div class="search-bar">
-      <input class="search-input" type="text" id="search-query" placeholder='e.g. "Content-Type: application/pdf" or "password" or "192.168" ...' onkeydown="if(event.key==='Enter')doSearch()">
-      <button class="search-btn" onclick="doSearch()">Search</button>
+<!-- ===== SEARCH TAB ===== -->
+<div id="tab-search" class="tab-panel" style="height:calc(100vh - 44px);">
+  <div class="search-wrap">
+    <div class="search-hdr">// SEARCH DATABASE</div>
+    <div class="search-sub">QUERY SESSIONS · FILES · HOSTS · CREDENTIALS · METADATA</div>
+    <div class="search-row">
+      <input class="search-inp" type="text" id="search-query" placeholder="e.g. Authorization / PDF / 192.168 / credential ..." onkeydown="if(event.key==='Enter')doSearch()">
+      <button class="search-go" onclick="doSearch()">EXECUTE</button>
     </div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:24px;" id="search-tags"></div>
+    <div class="quick-tags" id="search-tags"></div>
     <div id="search-results"></div>
   </div>
 </div>
 
 <!-- PROGRESS TOAST -->
 <div class="progress-wrap hidden" id="progress-wrap">
-  <div class="progress-title">
-    <div class="status-dot"></div>
-    <span id="progress-title-text">Processing...</span>
+  <div class="progress-title"><div class="tb-dot dot-amber"></div><span id="progress-title-text">PROCESSING...</span></div>
+  <div class="progress-bar-bg"><div class="progress-bar" id="progress-bar" style="width:0%"></div></div>
+  <div class="progress-detail" id="progress-detail">INITIALIZING...</div>
+</div>
+
+<!-- FILE MODAL -->
+<div id="file-modal" class="modal-bg hidden" onclick="closeFileModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-hdr">
+      <div class="modal-ico" id="modal-icon"></div>
+      <div>
+        <div class="modal-fname" id="modal-filename"></div>
+        <div class="modal-fmeta" id="modal-meta"></div>
+      </div>
+      <button class="modal-close" onclick="closeFileModal()">✕</button>
+    </div>
+    <div class="modal-tabs">
+      <button class="modal-tab on" onclick="switchModalTab('preview',this)">PREVIEW</button>
+      <button class="modal-tab" onclick="switchModalTab('strings',this)">STRINGS</button>
+      <button class="modal-tab" onclick="switchModalTab('hashes',this)">HASHES</button>
+    </div>
+    <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;">
+      <div class="modal-pane on" id="modal-preview"></div>
+      <div class="modal-pane" id="modal-strings"></div>
+      <div class="modal-pane" id="modal-hashes"></div>
+    </div>
+    <div class="modal-footer">
+      <div class="modal-footer-meta" id="modal-footer-meta"></div>
+      <button class="act-btn" onclick="extractFile(currentModalFile&&currentModalFile.name)">EXTRACT FILE</button>
+    </div>
   </div>
-  <div class="progress-bar-wrap">
-    <div class="progress-bar" id="progress-bar" style="width:0%"></div>
-  </div>
-  <div class="progress-detail" id="progress-detail">Initializing...</div>
 </div>
 
 <script>
-// ===================== DATA STORE =====================
-let sessions = [];
-let db = { sessions:[], files:[], dns:[], alerts:[], credentials:[], hosts:new Set() };
-let selectedSession = null;
-let rpMode = 'timeline';
-let activeProto = 'ALL';
-let activeDetailTab = 'overview';
+// ── CLOCK ──
+setInterval(()=>{
+  const n=new Date();
+  document.getElementById('clock').textContent=
+    n.toUTCString().split(' ')[4];
+},1000);
 
-// ===================== DEMO DATA =====================
+// ── STATE ──
+let sessions=[],db={sessions:[],files:[],dns:[],alerts:[],hosts:new Set()};
+let selectedSession=null,activeProto='ALL',activeDetailTab='overview',rpMode='timeline';
+let currentModalFile=null;
+
+// ── DEMO DATA ──
 function generateDemoData() {
   const now = Date.now();
   return [
@@ -498,17 +691,21 @@ function generateDemoData() {
         headers:{ 'Content-Type':'application/pdf','Content-Length':'44312','Content-Disposition':'attachment; filename="report-2024.pdf"','Server':'nginx/1.18.0','Cache-Control':'no-cache' },
         body:'%PDF-1.4 binary payload...' },
       files:[
-        { name:'report-2024.pdf', mime:'application/pdf', size:44312, entropy:7.82, md5:'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6', sha256:'abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890', icon:'📄', color:'#e74c3c' }
+        { name:'report-2024.pdf', mime:'application/pdf', size:44312, entropy:7.82, md5:'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6', sha256:'abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890', icon:'📄', color:'#ff6b6b',
+          content:{type:'pdf',pages:[
+            {heading:'Annual Report 2024 — Executive Summary',body:'This report outlines the financial performance and strategic initiatives for the fiscal year ending December 31, 2024. Total revenue increased 18% year-over-year to $4.2B, driven primarily by expansion in APAC markets and strong enterprise software sales.\n\nOperating income improved by 340 basis points to 22.4% margin, reflecting operational efficiencies realized from the 2023 infrastructure consolidation program.'},
+            {heading:'Financial Highlights',table:{headers:['Metric','FY2024','FY2023','YoY'],rows:[['Revenue','$4.2B','$3.56B','+18%'],['Gross Margin','61.2%','58.4%','+280bps'],['EBITDA','$940M','$756M','+24%'],['EPS (diluted)','$3.42','$2.88','+18.8%'],['Cash & Equivalents','$1.1B','$890M','+23.6%']]}},
+            {heading:'Risk Factors',body:'Forward-looking statements involve risks and uncertainties. Key risks include: macroeconomic headwinds in Europe, FX exposure from APAC operations (~$120M annualized), and ongoing litigation related to the 2022 acquisition of DataCore Inc.'}
+          ]}
+        }
       ],
       dns:[{ query:'example.com', type:'A', answer:'93.184.216.34', ts: now - 130000 }],
       tls:null,
-      alerts:[
-        { sev:'med', title:'Large file transfer', desc:'44 KB PDF extracted over unencrypted HTTP', icon:'⚠️' }
-      ],
+      alerts:[{ sev:'med', title:'Large file transfer', desc:'44 KB PDF extracted over unencrypted HTTP', icon:'⚠️' }],
       timeline:[
         { type:'dns', time:now-130000, label:'DNS query', detail:'example.com → 93.184.216.34' },
-        { type:'req', time:now-120000, label:'GET /download/report-2024.pdf', detail:'HTTP/1.1 • 2048 bytes' },
-        { type:'res', time:now-119658, label:'200 OK — PDF transfer', detail:'44312 bytes • application/pdf' },
+        { type:'req', time:now-120000, label:'GET /download/report-2024.pdf', detail:'HTTP/1.1 · 2048 bytes' },
+        { type:'res', time:now-119658, label:'200 OK — PDF transfer', detail:'44312 bytes · application/pdf' },
         { type:'file', time:now-119658, label:'File extracted', detail:'report-2024.pdf (entropy 7.82)' }
       ]
     },
@@ -530,7 +727,7 @@ function generateDemoData() {
         { sev:'low', title:'TLS 1.3', desc:'Strong cipher suite in use', icon:'🔒' }
       ],
       timeline:[
-        { type:'tls', time:now-95000, label:'TLS 1.3 handshake', detail:'api.github.com • AES_256_GCM' },
+        { type:'tls', time:now-95000, label:'TLS 1.3 handshake', detail:'api.github.com · AES_256_GCM' },
         { type:'req', time:now-94800, label:'POST /api/v1/repos/.../commits', detail:'Authorization: Bearer ghp_***' },
         { type:'res', time:now-93909, label:'201 Created', detail:'Commit object returned' }
       ]
@@ -543,8 +740,7 @@ function generateDemoData() {
       state:'CLOSED', flags:['dns'],
       request:{ method:'QUERY', uri:'suspicious-domain-xyz123.ru', version:'DNS',
         headers:{ 'Type':'A','Class':'IN','ID':'0x4A2F' }, body:'' },
-      response:{ status:0, statusText:'NOERROR',
-        headers:{ 'TTL':'300','Answer':'185.220.101.42' }, body:'' },
+      response:{ status:0, statusText:'NOERROR', headers:{ 'TTL':'300','Answer':'185.220.101.42' }, body:'' },
       files:[],
       dns:[
         { query:'suspicious-domain-xyz123.ru', type:'A', answer:'185.220.101.42', ts:now-88000, ttl:300 },
@@ -558,7 +754,7 @@ function generateDemoData() {
       timeline:[
         { type:'dns', time:now-88000, label:'DNS A query', detail:'suspicious-domain-xyz123.ru' },
         { type:'dns', time:now-87500, label:'DNS MX query', detail:'mail.suspicious-domain-xyz123.ru' },
-        { type:'res', time:now-87988, label:'Resolved → 185.220.101.42', detail:'TTL 300s • Tor exit node' }
+        { type:'res', time:now-87988, label:'Resolved → 185.220.101.42', detail:'TTL 300s · Tor exit node' }
       ]
     },
     {
@@ -569,22 +765,29 @@ function generateDemoData() {
       state:'CLOSED', flags:['file','creds'],
       request:{ method:'RETR', uri:'/exports/customer_data_2024.csv', version:'FTP',
         headers:{ 'USER':'jsmith','PASS':'Summer2024!','TYPE':'I','PASV':'' }, body:'' },
-      response:{ status:226, statusText:'Transfer complete',
-        headers:{ 'Size':'1048576','Transfer-time':'4.2s' }, body:'' },
+      response:{ status:226, statusText:'Transfer complete', headers:{ 'Size':'1048576','Transfer-time':'4.2s' }, body:'' },
       files:[
-        { name:'customer_data_2024.csv', mime:'text/csv', size:1048576, entropy:5.12, md5:'f1e2d3c4b5a6f7e8d9c0b1a2f3e4d5c6', sha256:'fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210', icon:'📊', color:'#2ecc71' }
+        { name:'customer_data_2024.csv', mime:'text/csv', size:1048576, entropy:5.12, md5:'f1e2d3c4b5a6f7e8d9c0b1a2f3e4d5c6', sha256:'fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210', icon:'📊', color:'#00ff88',
+          content:{type:'csv',headers:['customer_id','first_name','last_name','email','phone','ssn','credit_card','balance'],
+            rows:[
+              ['C-10042','James','Harrington','j.harrington@email.com','+1-555-0142','***-**-4821','4111-XXXX-XXXX-1234','$12,400'],
+              ['C-10043','Sarah','Chen','s.chen@webmail.net','+1-555-0198','***-**-7734','5500-XXXX-XXXX-5678','$8,750'],
+              ['C-10044','Mohammed','Al-Rashid','m.alrashid@corp.ae','+971-55-123','N/A','4532-XXXX-XXXX-9012','$45,200'],
+              ['C-10045','Elena','Volkova','e.volkova@mail.ru','+7-916-234','N/A','6011-XXXX-XXXX-3456','$3,100'],
+              ['C-10046','David','Okonkwo','d.okonkwo@netng.com','+234-80-345','N/A','4716-XXXX-XXXX-7890','$22,800'],
+            ],totalRows:48291}
+        }
       ],
-      dns:[],
-      tls:null,
+      dns:[], tls:null,
       alerts:[
         { sev:'high', title:'Cleartext credentials', desc:'FTP USER/PASS transmitted in plaintext: jsmith / Summer2024!', icon:'🔓' },
         { sev:'high', title:'Large CSV exfiltration', desc:'1 MB customer data file retrieved over unencrypted FTP', icon:'🚨' }
       ],
       timeline:[
         { type:'req', time:now-72000, label:'FTP USER jsmith', detail:'Cleartext authentication' },
-        { type:'req', time:now-71990, label:'FTP PASS Summer2024!', detail:'⚠️ Cleartext password' },
+        { type:'req', time:now-71990, label:'FTP PASS Summer2024!', detail:'⚠ Cleartext password' },
         { type:'req', time:now-71980, label:'RETR customer_data_2024.csv', detail:'Passive mode transfer' },
-        { type:'file', time:now-67800, label:'1 MB CSV extracted', detail:'customer_data_2024.csv • entropy 5.12' },
+        { type:'file', time:now-67800, label:'1 MB CSV extracted', detail:'customer_data_2024.csv · entropy 5.12' },
         { type:'res', time:now-67800, label:'226 Transfer complete', detail:'4.2s total' }
       ]
     },
@@ -599,10 +802,16 @@ function generateDemoData() {
         body:'From: reports@corp.local\r\nTo: external@gmail.com\r\nSubject: Q4 Financial Report - CONFIDENTIAL\r\n\r\nPlease find attached the Q4 financial report.\r\n' },
       response:{ status:250, statusText:'OK: accepted', headers:{}, body:'' },
       files:[
-        { name:'q4_report.xlsx', mime:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', size:286720, entropy:7.6, md5:'c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8', sha256:'1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', icon:'📊', color:'#2ecc71' }
+        { name:'q4_report.xlsx', mime:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', size:286720, entropy:7.6, md5:'c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8', sha256:'1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', icon:'📊', color:'#00ff88',
+          content:{type:'xlsx',sheets:[
+            {name:'Q4 Summary',headers:['Division','Q4 Revenue','Q4 Expenses','Net Profit','vs Q3'],
+              rows:[['North America','$28.4M','$19.1M','$9.3M','+12%'],['EMEA','$14.2M','$11.8M','$2.4M','-3%'],['APAC','$8.7M','$5.9M','$2.8M','+31%'],['TOTAL','$54.4M','$39.4M','$15.0M','+14%']]},
+            {name:'Headcount',headers:['Region','FTEs','Contractors','Open Reqs','Attrition'],
+              rows:[['NA','1,240','180','42','8.2%'],['EMEA','620','95','18','11.4%'],['APAC','310','44','27','6.1%']]}
+          ]}
+        }
       ],
-      dns:[],
-      tls:null,
+      dns:[], tls:null,
       alerts:[
         { sev:'high', title:'Base64 AUTH credentials', desc:'SMTP AUTH PLAIN: jsmith / Summer2024! (decoded)', icon:'🔓' },
         { sev:'high', title:'Sensitive document exfiltration', desc:'Confidential financial report emailed to external address', icon:'🚨' },
@@ -612,7 +821,7 @@ function generateDemoData() {
         { type:'req', time:now-45000, label:'SMTP EHLO', detail:'mail-relay.corp.local' },
         { type:'req', time:now-44900, label:'AUTH PLAIN (base64)', detail:'Decoded: jsmith / Summer2024!' },
         { type:'req', time:now-44800, label:'MAIL FROM → RCPT TO', detail:'reports@corp.local → external@gmail.com' },
-        { type:'file', time:now-44700, label:'Attachment: q4_report.xlsx', detail:'280 KB • spreadsheet • entropy 7.6' },
+        { type:'file', time:now-44700, label:'Attachment: q4_report.xlsx', detail:'280 KB · spreadsheet · entropy 7.6' },
         { type:'res', time:now-43900, label:'250 OK accepted', detail:'Message delivered' }
       ]
     }
@@ -620,155 +829,141 @@ function generateDemoData() {
 }
 
 function generateHex(session) {
-  const lines = [];
-  const raw = `${session.request.method} ${session.request.uri} ${session.request.version}\r\n` +
-    Object.entries(session.request.headers).map(([k,v])=>`${k}: ${v}`).join('\r\n') + '\r\n\r\n';
+  const lines=[];
+  const raw=`${session.request.method} ${session.request.uri} ${session.request.version}\r\n`+
+    Object.entries(session.request.headers).map(([k,v])=>`${k}: ${v}`).join('\r\n')+'\r\n\r\n';
   for(let i=0;i<Math.min(raw.length,128);i+=16){
-    const chunk = raw.slice(i,i+16);
-    const hex = chunk.split('').map(c=>c.charCodeAt(0).toString(16).padStart(2,'0')).join(' ');
-    const ascii = chunk.split('').map(c=>{const n=c.charCodeAt(0);return n>=32&&n<127?c:'.'}).join('');
+    const chunk=raw.slice(i,i+16);
+    const hex=chunk.split('').map(c=>c.charCodeAt(0).toString(16).padStart(2,'0')).join(' ');
+    const ascii=chunk.split('').map(c=>{const n=c.charCodeAt(0);return n>=32&&n<127?c:'.'}).join('');
     lines.push({off:i.toString(16).padStart(4,'0'),hex,ascii});
   }
   return lines;
 }
 
-// ===================== MAIN ACTIONS =====================
+// ── ACTIONS ──
 function loadDemoData() {
-  sessions = generateDemoData();
+  sessions=generateDemoData();
   renderSessions(sessions);
-  document.getElementById('run-btn').disabled = false;
-  document.getElementById('export-btn').disabled = false;
-  updateToolbarStats();
-  showProgress('Loading demo capture...', () => {
-    indexToDatabase(sessions);
-  });
+  document.getElementById('run-btn').disabled=false;
+  document.getElementById('export-btn').disabled=false;
+  updateStats();
+  showProgress('Loading demo capture...',()=>{ indexToDatabase(sessions); });
 }
 
-function handleFileUpload(files) {
-  if(!files.length) return;
-  // Simulate parsing
-  sessions = generateDemoData();
-  renderSessions(sessions);
-  document.getElementById('run-btn').disabled = false;
-  document.getElementById('export-btn').disabled = false;
-  showProgress(`Parsing ${files[0].name}...`, () => {
+async function handleFileUpload(files) {
+  if(!files.length)return;
+  const file=files[0];
+  showProgress(`Uploading ${file.name}...`,null);
+  try {
+    const h=await fetch('http://localhost:5050/health',{signal:AbortSignal.timeout(1500)});
+    if(!h.ok)throw new Error('unhealthy');
+    const form=new FormData();form.append('file',file);
+    const res=await fetch('http://localhost:5050/analyze',{method:'POST',body:form});
+    if(!res.ok){const e=await res.json();throw new Error(e.error||'error');}
+    const data=await res.json();
+    sessions=data.sessions;
+    renderSessions(sessions);
+    document.getElementById('run-btn').disabled=false;
+    document.getElementById('export-btn').disabled=false;
     indexToDatabase(sessions);
-  });
+    document.getElementById('progress-wrap').classList.add('hidden');
+    document.getElementById('progress-bar').style.width='0%';
+  } catch(err) {
+    sessions=generateDemoData();
+    renderSessions(sessions);
+    document.getElementById('run-btn').disabled=false;
+    document.getElementById('export-btn').disabled=false;
+    showProgress('Backend offline — demo data loaded',()=>{ indexToDatabase(sessions); });
+  }
 }
 
 function runAnalysis() {
-  if(!sessions.length) return;
-  showProgress('Reassembling TCP streams...', () => {
-    updateToolbarStats();
-  });
+  if(!sessions.length)return;
+  showProgress('Reassembling TCP streams...',()=>{ updateStats(); });
 }
 
-function showProgress(title, done) {
-  const wrap = document.getElementById('progress-wrap');
-  const bar = document.getElementById('progress-bar');
-  const detail = document.getElementById('progress-detail');
-  const titleEl = document.getElementById('progress-title-text');
-  const steps = [
-    'Parsing packet headers...',
-    'Reassembling TCP streams...',
-    'Extracting HTTP sessions...',
-    'Mining metadata & artifacts...',
-    'Detecting credentials...',
-    'Extracting embedded files...',
-    'Calculating file entropy...',
-    'Running signature matching...',
-    'Indexing to database...',
-    'Complete.'
-  ];
+function showProgress(title,done) {
+  const wrap=document.getElementById('progress-wrap');
+  const bar=document.getElementById('progress-bar');
+  const detail=document.getElementById('progress-detail');
+  const titleEl=document.getElementById('progress-title-text');
+  const steps=['PARSING PACKET HEADERS...','REASSEMBLING TCP STREAMS...','EXTRACTING HTTP SESSIONS...','MINING METADATA & ARTIFACTS...','DETECTING CREDENTIALS...','EXTRACTING EMBEDDED FILES...','CALCULATING FILE ENTROPY...','RUNNING SIGNATURE MATCHING...','INDEXING TO DATABASE...','COMPLETE.'];
   wrap.classList.remove('hidden');
-  titleEl.textContent = title;
+  titleEl.textContent=title;
   let i=0;
-  const interval = setInterval(()=>{
-    const pct = Math.round((i/steps.length)*100);
-    bar.style.width = pct+'%';
-    detail.textContent = steps[i]||'';
-    i++;
+  const iv=setInterval(()=>{
+    bar.style.width=Math.round((i/steps.length)*100)+'%';
+    detail.textContent=steps[i]||'';i++;
     if(i>steps.length){
-      clearInterval(interval);
-      bar.style.width='100%';
-      detail.textContent='Done.';
-      setTimeout(()=>{ wrap.classList.add('hidden'); bar.style.width='0%'; done&&done(); },600);
+      clearInterval(iv);bar.style.width='100%';detail.textContent='DONE.';
+      setTimeout(()=>{ wrap.classList.add('hidden');bar.style.width='0%';done&&done(); },600);
     }
   },120);
 }
 
 function indexToDatabase(sess) {
-  db.sessions = sess.map(s=>({
-    id:s.id, proto:s.proto, ts:s.ts, src:s.src, dst:s.dst,
-    srcHost:s.srcHost, dstHost:s.dstHost, bytes:s.bytes.req+s.bytes.res,
-    duration:s.duration, state:s.state, alerts:s.alerts.length
-  }));
-  db.files = sess.flatMap(s=>s.files.map(f=>({...f,sessionId:s.id})));
-  db.dns = sess.flatMap(s=>s.dns.map(d=>({...d,sessionId:s.id})));
-  db.alerts = sess.flatMap(s=>s.alerts.map(a=>({...a,sessionId:s.id})));
-  db.hosts = new Set(sess.flatMap(s=>[s.srcHost,s.dstHost]));
-  updateDbView();
-  updateToolbarStats();
+  db.sessions=sess.map(s=>({id:s.id,proto:s.proto,ts:s.ts,src:s.src,dst:s.dst,srcHost:s.srcHost,dstHost:s.dstHost,bytes:s.bytes.req+s.bytes.res,duration:s.duration,state:s.state,alerts:s.alerts.length}));
+  db.files=sess.flatMap(s=>s.files.map(f=>({...f,sessionId:s.id})));
+  db.dns=sess.flatMap(s=>s.dns.map(d=>({...d,sessionId:s.id})));
+  db.alerts=sess.flatMap(s=>s.alerts.map(a=>({...a,sessionId:s.id})));
+  db.hosts=new Set(sess.flatMap(s=>[s.srcHost,s.dstHost]));
+  updateDbView();updateStats();
 }
 
-function updateToolbarStats() {
-  document.getElementById('stat-sessions').textContent = sessions.length;
-  document.getElementById('stat-files').textContent = sessions.reduce((a,s)=>a+s.files.length,0);
-  const alerts = sessions.reduce((a,s)=>a+s.alerts.length,0);
-  document.getElementById('stat-alerts').textContent = alerts;
-  document.getElementById('db-stat-sessions').textContent = db.sessions.length;
-  document.getElementById('db-stat-files').textContent = db.files.length;
-  document.getElementById('db-stat-hosts').textContent = db.hosts.size;
-  const highAlerts = db.alerts.filter(a=>a.sev==='high').length;
-  document.getElementById('db-stat-alerts').textContent = db.alerts.length;
-  document.getElementById('db-stat-high').textContent = highAlerts ? `${highAlerts} HIGH` : '';
+function updateStats() {
+  document.getElementById('stat-sessions').textContent=sessions.length;
+  document.getElementById('stat-files').textContent=sessions.reduce((a,s)=>a+s.files.length,0);
+  const al=sessions.reduce((a,s)=>a+s.alerts.length,0);
+  document.getElementById('stat-alerts').textContent=al;
+  document.getElementById('db-stat-sessions').textContent=db.sessions.length;
+  document.getElementById('db-stat-files').textContent=db.files.length;
+  document.getElementById('db-stat-hosts').textContent=db.hosts.size;
+  const hi=db.alerts.filter(a=>a.sev==='high').length;
+  document.getElementById('db-stat-alerts').textContent=db.alerts.length;
+  document.getElementById('db-stat-high').textContent=hi?`${hi} HIGH SEVERITY`:'';
+  document.getElementById('sess-count').textContent=sessions.length+' SESSIONS';
 }
 
 function clearAll() {
-  sessions=[];db={sessions:[],files:[],dns:[],alerts:[],credentials:[],hosts:new Set()};
+  sessions=[];db={sessions:[],files:[],dns:[],alerts:[],hosts:new Set()};
   selectedSession=null;
-  document.getElementById('sessions-list').innerHTML='<div style="padding:20px 10px;text-align:center;color:var(--text3);font-size:12px;">Load a capture file to see sessions</div>';
-  document.getElementById('empty-detail').classList.remove('hidden');
+  document.getElementById('sessions-list').innerHTML='<div style="padding:20px;text-align:center;color:var(--amber-dim);font-size:10px;letter-spacing:0.06em;">AWAITING CAPTURE DATA</div>';
+  document.getElementById('empty-detail').style.display='flex';
   document.getElementById('session-detail').classList.add('hidden');
-  document.getElementById('rp-body').innerHTML='<div style="color:var(--text3);font-size:12px;text-align:center;padding:20px 0;">Select a session</div>';
+  document.getElementById('rp-body').innerHTML='<div style="padding:20px;text-align:center;color:var(--amber-dim);font-size:9px;letter-spacing:0.08em;">SELECT A SESSION</div>';
   document.getElementById('run-btn').disabled=true;
   document.getElementById('export-btn').disabled=true;
-  updateToolbarStats();
+  updateStats();
 }
 
 function exportData() {
   if(!sessions.length)return;
-  const blob = new Blob([JSON.stringify({exportedAt:new Date().toISOString(),sessions,db:{sessions:db.sessions,files:db.files,dns:db.dns,alerts:db.alerts}},null,2)],{type:'application/json'});
+  const blob=new Blob([JSON.stringify({exportedAt:new Date().toISOString(),sessions,db:{sessions:db.sessions,files:db.files,dns:db.dns,alerts:db.alerts}},null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='netforge-export.json';a.click();
 }
 
-// ===================== SESSIONS LIST =====================
+// ── SESSION LIST ──
 function renderSessions(list) {
-  const el = document.getElementById('sessions-list');
-  const filt = list.filter(s=> activeProto==='ALL' || s.proto===activeProto);
-  const query = document.getElementById('filter-input').value.toLowerCase();
-  const filtered = filt.filter(s=>
-    !query ||
-    s.srcHost.toLowerCase().includes(query)||
-    s.dstHost.toLowerCase().includes(query)||
-    s.src.includes(query)||s.dst.includes(query)||
-    s.proto.toLowerCase().includes(query)
-  );
-  if(!filtered.length){el.innerHTML='<div style="padding:20px 10px;text-align:center;color:var(--text3);font-size:12px;">No sessions match filter</div>';return;}
-  el.innerHTML = filtered.map(s=>`
-    <div class="session-item${selectedSession&&selectedSession.id===s.id?' selected':''}" onclick="selectSession('${s.id}')">
-      <div class="si-header">
-        <span class="si-proto proto-${s.proto.toLowerCase()}">${s.proto}</span>
+  const el=document.getElementById('sessions-list');
+  const filt=list.filter(s=>activeProto==='ALL'||s.proto===activeProto);
+  const q=document.getElementById('filter-input').value.toLowerCase();
+  const filtered=filt.filter(s=>!q||s.srcHost.toLowerCase().includes(q)||s.dstHost.toLowerCase().includes(q)||s.src.includes(q)||s.dst.includes(q)||s.proto.toLowerCase().includes(q));
+  if(!filtered.length){el.innerHTML='<div style="padding:20px;text-align:center;color:var(--amber-dim);font-size:10px;letter-spacing:0.06em;">NO SESSIONS MATCH FILTER</div>';return;}
+  el.innerHTML=filtered.map(s=>`
+    <div class="sess-item${selectedSession&&selectedSession.id===s.id?' sel':''}" onclick="selectSession('${s.id}')">
+      <div class="si-top">
+        <span class="si-proto proto-${s.proto}">${s.proto}</span>
         <span class="si-time">${formatTime(s.ts)}</span>
       </div>
       <div class="si-hosts">${s.srcHost} → ${s.dstHost}</div>
-      <div class="si-meta">
+      <div class="si-bottom">
         <span class="si-bytes">${formatBytes(s.bytes.req+s.bytes.res)}</span>
         <div class="si-flags">
-          ${s.flags.includes('file')?'<div class="si-flag flag-file" title="Files extracted"></div>':''}
-          ${s.flags.includes('creds')?'<div class="si-flag flag-creds" title="Credentials detected"></div>':''}
-          ${s.flags.includes('dns')?'<div class="si-flag flag-dns" title="DNS activity"></div>':''}
-          ${s.flags.includes('tls')?'<div class="si-flag flag-tls" title="TLS encrypted"></div>':''}
+          ${s.flags.includes('file')?'<span class="si-flag flag-file">FILE</span>':''}
+          ${s.flags.includes('creds')?'<span class="si-flag flag-creds">CRED</span>':''}
+          ${s.flags.includes('dns')?'<span class="si-flag flag-dns">DNS</span>':''}
+          ${s.flags.includes('tls')?'<span class="si-flag flag-tls">TLS</span>':''}
         </div>
       </div>
     </div>
@@ -776,188 +971,141 @@ function renderSessions(list) {
 }
 
 function selectSession(id) {
-  selectedSession = sessions.find(s=>s.id===id);
+  selectedSession=sessions.find(s=>s.id===id);
   if(!selectedSession)return;
   renderSessions(sessions);
-  document.getElementById('empty-detail').classList.add('hidden');
+  document.getElementById('empty-detail').style.display='none';
   document.getElementById('session-detail').classList.remove('hidden');
-  renderOverview();
-  renderPayload();
-  renderFiles();
-  renderHex();
-  renderTimeline();
-  renderAlerts();
+  renderOverview();renderPayload();renderFiles();renderHex();
+  renderRpPanel();
   switchDetailTab(activeDetailTab);
 }
 
-function toggleProto(el, proto) {
-  activeProto = proto;
-  document.querySelectorAll('.proto-chip').forEach(c=>c.classList.remove('active'));
-  el.classList.add('active');
+function toggleProto(el,proto) {
+  activeProto=proto;
+  document.querySelectorAll('.proto-btn').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
   renderSessions(sessions);
 }
+function applyFilter(){renderSessions(sessions);}
 
-function applyFilter() { renderSessions(sessions); }
-
-// ===================== DETAIL TABS =====================
+// ── DETAIL TABS ──
 function switchDetailTab(tab) {
-  activeDetailTab = tab;
-  document.querySelectorAll('.detail-tab').forEach(t=>t.classList.remove('active'));
-  document.querySelectorAll('.detail-content').forEach(c=>c.classList.add('hidden'));
-  const tabEl = document.querySelector(`.detail-tab[onclick*="${tab}"]`);
-  if(tabEl)tabEl.classList.add('active');
+  activeDetailTab=tab;
+  document.querySelectorAll('.dtab').forEach(t=>t.classList.remove('on'));
+  document.querySelectorAll('.dcontent').forEach(c=>c.classList.add('hidden'));
+  const el=document.querySelector(`.dtab[onclick*="${tab}"]`);
+  if(el)el.classList.add('on');
   document.getElementById(`detail-${tab}`).classList.remove('hidden');
 }
 
-// ===================== RENDERERS =====================
+// ── RENDERERS ──
 function renderOverview() {
-  const s = selectedSession;
-  const highAlerts = s.alerts.filter(a=>a.sev==='high').length;
-  document.getElementById('detail-overview').innerHTML = `
-    <div class="session-hdr-card">
-      <div class="shc-top">
-        <div class="shc-title">${s.proto} Session — ${s.id}</div>
-        <div class="shc-badges">
-          <span class="badge badge-blue">${s.proto}</span>
-          <span class="badge badge-${s.state==='CLOSED'?'green':'amber'}">${s.state}</span>
-          ${highAlerts>0?`<span class="badge badge-red">⚠ ${highAlerts} ALERT${highAlerts>1?'S':''}</span>`:''}
+  const s=selectedSession;
+  const hi=s.alerts.filter(a=>a.sev==='high').length;
+  document.getElementById('detail-overview').innerHTML=`
+    <div class="ov-banner">
+      <div class="ov-banner-top">
+        <div class="ov-id">${s.proto} // ${s.id}</div>
+        <div class="ov-badges">
+          <span class="badge badge-info">${s.proto}</span>
+          <span class="badge badge-${s.state==='CLOSED'?'ok':'warn'}">${s.state}</span>
+          ${hi>0?`<span class="badge badge-danger">⚠ ${hi} ALERT${hi>1?'S':''}</span>`:''}
         </div>
       </div>
-      <div class="shc-grid">
-        <div class="shc-field"><div class="shc-label">Source</div><div class="shc-value">${s.src}<br><span style="color:var(--text3);font-size:10px">${s.srcHost}</span></div></div>
-        <div class="shc-field"><div class="shc-label">Destination</div><div class="shc-value">${s.dst}<br><span style="color:var(--text3);font-size:10px">${s.dstHost}</span></div></div>
-        <div class="shc-field"><div class="shc-label">Timestamp</div><div class="shc-value">${new Date(s.ts).toLocaleString()}</div></div>
-        <div class="shc-field"><div class="shc-label">TX / RX</div><div class="shc-value accent">${formatBytes(s.bytes.req)} / ${formatBytes(s.bytes.res)}</div></div>
-        <div class="shc-field"><div class="shc-label">Duration</div><div class="shc-value">${s.duration}ms</div></div>
-        <div class="shc-field"><div class="shc-label">Artifacts</div><div class="shc-value">${s.files.length} file${s.files.length!==1?'s':''}, ${s.dns.length} DNS</div></div>
+      <div class="ov-grid">
+        <div class="ov-field"><div class="ov-label">SOURCE</div><div class="ov-val">${s.src}<br><span style="color:var(--amber-dim);font-size:9px">${s.srcHost}</span></div></div>
+        <div class="ov-field"><div class="ov-label">DESTINATION</div><div class="ov-val">${s.dst}<br><span style="color:var(--amber-dim);font-size:9px">${s.dstHost}</span></div></div>
+        <div class="ov-field"><div class="ov-label">TIMESTAMP</div><div class="ov-val dim">${new Date(s.ts).toLocaleString()}</div></div>
+        <div class="ov-field"><div class="ov-label">TX / RX</div><div class="ov-val bright">${formatBytes(s.bytes.req)} / ${formatBytes(s.bytes.res)}</div></div>
+        <div class="ov-field"><div class="ov-label">DURATION</div><div class="ov-val dim">${s.duration}ms</div></div>
+        <div class="ov-field"><div class="ov-label">ARTIFACTS</div><div class="ov-val">${s.files.length} file${s.files.length!==1?'s':''}, ${s.dns.length} DNS</div></div>
       </div>
     </div>
-
-    ${s.tls?`
-    <div class="meta-section">
-      <div class="meta-section-title">TLS / Encryption</div>
-      <div class="meta-grid">
-        <div class="meta-key">Version</div><div class="meta-val good">${s.tls.version}</div>
-        <div class="meta-key">Cipher suite</div><div class="meta-val">${s.tls.cipher}</div>
-        <div class="meta-key">SNI</div><div class="meta-val">${s.tls.sni}</div>
-        <div class="meta-key">Certificate</div><div class="meta-val">${s.tls.cert}</div>
-      </div>
-    </div>`:''}
-
-    <div class="meta-section">
-      <div class="meta-section-title">Request metadata</div>
-      <div class="meta-grid">
-        <div class="meta-key">Method</div><div class="meta-val highlight">${s.request.method}</div>
-        <div class="meta-key">URI</div><div class="meta-val">${s.request.uri}</div>
-        <div class="meta-key">Version</div><div class="meta-val">${s.request.version}</div>
-        ${Object.entries(s.request.headers).map(([k,v])=>`
-          <div class="meta-key">${k}</div><div class="meta-val${k==='Authorization'||k==='PASS'?' danger':''}">${v}</div>
-        `).join('')}
-      </div>
-    </div>
-
-    <div class="meta-section">
-      <div class="meta-section-title">Response metadata</div>
-      <div class="meta-grid">
-        <div class="meta-key">Status</div><div class="meta-val ${s.response.status<300?'good':s.response.status<400?'highlight':'danger'}">${s.response.status} ${s.response.statusText}</div>
-        ${Object.entries(s.response.headers).map(([k,v])=>`
-          <div class="meta-key">${k}</div><div class="meta-val">${v}</div>
-        `).join('')}
-      </div>
-    </div>
-
-    ${s.dns.length?`
-    <div class="meta-section">
-      <div class="meta-section-title">DNS queries</div>
-      <div class="meta-grid">
-        ${s.dns.map(d=>`
-          <div class="meta-key">${d.query}</div>
-          <div class="meta-val">${d.type} → ${d.answer}${d.ttl?' (TTL '+d.ttl+'s)':''}</div>
-        `).join('')}
-      </div>
-    </div>`:''}
+    ${s.tls?`<div class="section"><div class="section-hdr">TLS METADATA</div><div class="kv-grid">
+      <div class="kv-key">VERSION</div><div class="kv-val good">${s.tls.version}</div>
+      <div class="kv-key">CIPHER</div><div class="kv-val">${s.tls.cipher}</div>
+      <div class="kv-key">SNI</div><div class="kv-val">${s.tls.sni}</div>
+      <div class="kv-key">CERTIFICATE</div><div class="kv-val">${s.tls.cert}</div>
+    </div></div>`:''}
+    <div class="section"><div class="section-hdr">REQUEST METADATA</div><div class="kv-grid">
+      <div class="kv-key">METHOD</div><div class="kv-val" style="color:#ffcc00">${s.request.method}</div>
+      <div class="kv-key">URI</div><div class="kv-val hi">${s.request.uri}</div>
+      <div class="kv-key">VERSION</div><div class="kv-val dim">${s.request.version}</div>
+      ${Object.entries(s.request.headers).map(([k,v])=>`
+        <div class="kv-key">${k}</div>
+        <div class="kv-val${k==='Authorization'||k==='PASS'?' danger':''}">${escHtml(v)}</div>
+      `).join('')}
+    </div></div>
+    <div class="section"><div class="section-hdr">RESPONSE METADATA</div><div class="kv-grid">
+      <div class="kv-key">STATUS</div><div class="kv-val ${s.response.status<300?'good':s.response.status>=400?'danger':''}">${s.response.status} ${s.response.statusText}</div>
+      ${Object.entries(s.response.headers).map(([k,v])=>`
+        <div class="kv-key">${k}</div><div class="kv-val dim">${escHtml(v)}</div>
+      `).join('')}
+    </div></div>
+    ${s.dns.length?`<div class="section"><div class="section-hdr">DNS QUERIES</div><div class="kv-grid">
+      ${s.dns.map(d=>`<div class="kv-key">${escHtml(d.query)}</div><div class="kv-val">${d.type} → ${d.answer||'?'}${d.ttl?' (TTL '+d.ttl+'s)':''}</div>`).join('')}
+    </div></div>`:''}
   `;
 }
 
 function renderPayload() {
-  const s = selectedSession;
-  document.getElementById('detail-payload').innerHTML = `
-    <div class="payload-row">
-      <div class="payload-viewer">
-        <div class="pv-header">
-          <span class="pv-title">Request payload</span>
-          <span class="pv-dir req">→ CLIENT</span>
-        </div>
-        <div class="pv-body">${formatPayload(s.request)}</div>
-      </div>
+  const s=selectedSession;
+  document.getElementById('detail-payload').innerHTML=`
+    <div class="pv">
+      <div class="pv-hdr"><span class="pv-hdr-label">REQUEST PAYLOAD</span><span class="pv-dir dir-req">→ CLIENT</span></div>
+      <div class="pv-body">${formatPayload(s.request)}</div>
     </div>
-    <div class="payload-row">
-      <div class="payload-viewer">
-        <div class="pv-header">
-          <span class="pv-title">Response payload</span>
-          <span class="pv-dir res">← SERVER</span>
-        </div>
-        <div class="pv-body">${formatPayload(s.response)}</div>
-      </div>
+    <div class="pv">
+      <div class="pv-hdr"><span class="pv-hdr-label">RESPONSE PAYLOAD</span><span class="pv-dir dir-res">← SERVER</span></div>
+      <div class="pv-body">${formatPayload(s.response)}</div>
     </div>
-    ${s.request.body?`
-    <div class="payload-row">
-      <div class="payload-viewer">
-        <div class="pv-header"><span class="pv-title">Request body</span></div>
-        <div class="pv-body">${escHtml(s.request.body)}</div>
-      </div>
-    </div>`:''}
+    ${s.request.body?`<div class="pv"><div class="pv-hdr"><span class="pv-hdr-label">REQUEST BODY</span></div><div class="pv-body">${escHtml(s.request.body)}</div></div>`:''}
   `;
 }
 
 function formatPayload(msg) {
-  const isReq = 'method' in msg;
-  const statusClass = msg.status && msg.status < 300 ? 'status-ok' : msg.status >= 400 ? 'status-err' : '';
-  const lines = isReq
-    ? [`<span class="method">${msg.method}</span> ${escHtml(msg.uri)} ${msg.version}`]
-    : [`<span class="${statusClass}">${msg.status} ${msg.statusText}</span>`];
+  const isReq='method' in msg;
+  const sc=msg.status&&msg.status<300?'ps-ok':msg.status>=400?'ps-err':'';
+  const lines=isReq?[`<span class="pm">${msg.method}</span> ${escHtml(msg.uri)} ${msg.version}`]:[`<span class="${sc}">${msg.status} ${msg.statusText}</span>`];
   Object.entries(msg.headers).forEach(([k,v])=>{
-    const isAuth = k==='Authorization'||k==='PASS';
-    lines.push(`<span class="key">${escHtml(k)}</span>: <span class="val${isAuth?' danger':''}">${escHtml(v)}</span>`);
+    const isDanger=k==='Authorization'||k==='PASS';
+    lines.push(`<span class="pk">${escHtml(k)}</span>: <span class="${isDanger?'pdanger':'pv2'}">${escHtml(v)}</span>`);
   });
   return lines.join('\n');
 }
 
 function renderFiles() {
-  const s = selectedSession;
+  const s=selectedSession;
   if(!s.files.length){
-    document.getElementById('detail-files').innerHTML='<div class="empty-state" style="padding:40px 0;"><div class="empty-icon">📂</div><div class="empty-title">No files extracted</div><div class="empty-sub">No file transfers detected in this session</div></div>';
+    document.getElementById('detail-files').innerHTML='<div class="empty" style="padding:40px 0;"><div style="font-family:var(--display);font-size:10px;letter-spacing:0.12em;color:var(--amber-dim);">NO FILES EXTRACTED</div><div style="font-size:9px;color:var(--amber-dim);opacity:0.6;margin-top:6px;">No file transfers detected in this session</div></div>';
     return;
   }
-  document.getElementById('detail-files').innerHTML = `
-    <table class="files-table">
-      <thead>
-        <tr><th>File</th><th>MIME type</th><th>Size</th><th>Entropy</th><th>MD5</th><th></th></tr>
-      </thead>
+  document.getElementById('detail-files').innerHTML=`
+    <div style="font-size:9px;color:var(--amber-dim);letter-spacing:0.06em;margin-bottom:8px;">// CLICK ANY FILE TO INSPECT CONTENTS</div>
+    <table class="files-tbl">
+      <thead><tr><th>FILENAME</th><th>MIME TYPE</th><th>SIZE</th><th>ENTROPY</th><th>MD5</th><th></th></tr></thead>
       <tbody>
-        ${s.files.map(f=>`
-          <tr>
-            <td><div class="file-row">
-              <div class="file-icon" style="background:${f.color}22;color:${f.color}">${f.icon}</div>
-              <div><div class="file-name">${escHtml(f.name)}</div></div>
-            </div></td>
-            <td><span class="file-type">${escHtml(f.mime)}</span></td>
-            <td class="file-size">${formatBytes(f.size)}</td>
+        ${s.files.map((f,i)=>`
+          <tr class="clickable" onclick="openFileModal(${i})">
+            <td><div class="file-name-cell"><span class="file-ico">${f.icon}</span><span class="file-nm">${escHtml(f.name)}</span></div></td>
+            <td><span class="file-mime">${escHtml(f.mime)}</span></td>
+            <td class="file-sz">${formatBytes(f.size)}</td>
             <td>
-              <div class="entropy-bar"><div class="entropy-fill" style="width:${(f.entropy/8)*100}%;background:${f.entropy>7?'var(--red)':f.entropy>5?'var(--amber)':'var(--green)'};"></div></div>
-              <span style="font-size:10px;color:${f.entropy>7?'var(--red)':f.entropy>5?'var(--amber)':'var(--green)'}">${f.entropy.toFixed(2)}</span>
+              <div class="ent-bar"><div class="ent-fill" style="width:${(f.entropy/8)*100}%;background:${f.entropy>7?'var(--red)':f.entropy>5?'var(--amber)':'var(--green)'};"></div></div>
+              <span class="ent-val" style="color:${f.entropy>7?'var(--red)':f.entropy>5?'var(--amber)':'var(--green)'}">${f.entropy.toFixed(2)}</span>
             </td>
             <td class="file-hash">${f.md5.slice(0,12)}...</td>
-            <td><button class="dl-btn" onclick="extractFile('${escHtml(f.name)}')">Extract</button></td>
+            <td><button class="act-btn" onclick="event.stopPropagation();extractFile('${escHtml(f.name)}')">EXTRACT</button></td>
           </tr>
         `).join('')}
       </tbody>
     </table>
-    <div style="margin-top:14px;padding:10px;background:var(--bg3);border-radius:7px;border:1px solid var(--border);">
+    <div style="margin-top:10px;border:1px solid var(--border);padding:8px;background:var(--bg);">
       ${s.files.map(f=>`
-        <div class="meta-grid" style="margin-bottom:8px;">
-          <div class="meta-key">SHA-256</div><div class="meta-val" style="font-size:10px;">${f.sha256}</div>
-          <div class="meta-key">Entropy note</div><div class="meta-val ${f.entropy>7?'danger':''}">${f.entropy>7?'High entropy — possible encryption/compression':f.entropy>5?'Moderate entropy':'Low entropy — plaintext data'}</div>
+        <div class="kv-grid" style="margin-bottom:6px;">
+          <div class="kv-key">SHA-256</div><div class="kv-val dim" style="font-size:9px;">${f.sha256}</div>
+          <div class="kv-key">ENTROPY NOTE</div><div class="kv-val ${f.entropy>7?'danger':''}">${f.entropy>7?'HIGH — POSSIBLE ENCRYPTION/COMPRESSION':f.entropy>5?'MODERATE — STRUCTURED BINARY':'LOW — PLAINTEXT DATA'}</div>
         </div>
       `).join('')}
     </div>
@@ -965,21 +1113,18 @@ function renderFiles() {
 }
 
 function renderHex() {
-  const s = selectedSession;
-  const hexLines = generateHex(s);
-  document.getElementById('detail-hex').innerHTML = `
-    <div style="margin-bottom:8px;font-size:11px;color:var(--text3);">First 128 bytes of reassembled stream</div>
-    <div class="payload-viewer">
-      <div class="pv-header">
-        <span class="pv-title">Raw stream — ${s.src} → ${s.dst}</span>
-        <span class="pv-dir req">HEX DUMP</span>
-      </div>
+  const s=selectedSession;
+  const lines=generateHex(s);
+  document.getElementById('detail-hex').innerHTML=`
+    <div style="font-size:9px;color:var(--amber-dim);letter-spacing:0.08em;margin-bottom:8px;">// FIRST 128 BYTES — REASSEMBLED STREAM</div>
+    <div class="pv">
+      <div class="pv-hdr"><span class="pv-hdr-label">RAW STREAM — ${s.src} → ${s.dst}</span><span class="pv-dir dir-req">HEX DUMP</span></div>
       <div class="pv-body">
-        <div class="hex-view">
-          ${hexLines.map(l=>`
-            <span class="hex-offset">${l.off}</span>
-            <span class="hex-bytes">${l.hex.padEnd(47)}</span>
-            <span class="hex-ascii">${l.ascii.split('').map(c=>c!='.'?`<span class="h-printable">${escHtml(c)}</span>`:escHtml(c)).join('')}</span>
+        <div class="hex-grid">
+          ${lines.map(l=>`
+            <span class="hex-off">${l.off}</span>
+            <span class="hex-b">${l.hex.padEnd(47)}</span>
+            <span class="hex-a">${l.ascii.split('').map(c=>c!='.'?`<span class="hex-p">${escHtml(c)}</span>`:escHtml(c)).join('')}</span>
           `).join('\n')}
         </div>
       </div>
@@ -987,136 +1132,196 @@ function renderHex() {
   `;
 }
 
-function renderTimeline() {
-  const s = selectedSession;
-  document.getElementById('rp-body').innerHTML = s.timeline.map(t=>`
-    <div class="tl-item tl-${t.type}">
-      <div class="tl-time">${new Date(t.time).toLocaleTimeString('en',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'})} +${t.time-s.ts}ms</div>
-      <div class="tl-label">${escHtml(t.label)}</div>
-      <div class="tl-detail">${escHtml(t.detail)}</div>
-    </div>
-  `).join('');
+// ── RIGHT PANEL ──
+let currentRpMode='timeline';
+function switchRp(mode,el) {
+  currentRpMode=mode;
+  document.querySelectorAll('.rp-tab').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on');
+  renderRpPanel();
 }
 
-function renderAlerts() {
-  const s = selectedSession;
-  document.getElementById('rp-body').dataset.alertsHtml = s.alerts.map(a=>`
-    <div class="alert-item sev-${a.sev}">
-      <div class="alert-icon">${a.icon}</div>
-      <div>
-        <div class="alert-title">${escHtml(a.title)}</div>
-        <div class="alert-desc">${escHtml(a.desc)}</div>
+function renderRpPanel() {
+  const s=selectedSession;
+  if(!s){document.getElementById('rp-body').innerHTML='<div style="padding:20px;text-align:center;color:var(--amber-dim);font-size:9px;letter-spacing:0.08em;">SELECT A SESSION</div>';return;}
+  if(currentRpMode==='timeline') {
+    document.getElementById('rp-body').innerHTML=s.timeline.map(t=>`
+      <div class="tl-item tl-${t.type}">
+        <div class="tl-time">${new Date(t.time).toLocaleTimeString('en',{hour12:false})} +${t.time-s.ts}ms</div>
+        <div class="tl-label">${escHtml(t.label)}</div>
+        <div class="tl-detail">${escHtml(t.detail)}</div>
       </div>
-    </div>
-  `).join('');
-}
-
-let rpShowingAlerts = false;
-function toggleRpView() {
-  rpShowingAlerts = !rpShowingAlerts;
-  const btn = document.getElementById('rp-toggle');
-  const title = document.getElementById('rp-title');
-  if(rpShowingAlerts) {
-    btn.textContent='Timeline';
-    title.textContent='Alerts';
-    document.getElementById('rp-body').innerHTML = document.getElementById('rp-body').dataset.alertsHtml||'';
-  } else {
-    btn.textContent='Alerts';
-    title.textContent='Timeline';
-    if(selectedSession)renderTimeline();
+    `).join('');
+  } else if(currentRpMode==='alerts') {
+    document.getElementById('rp-body').innerHTML=s.alerts.map(a=>`
+      <div class="al-item al-${a.sev}">
+        <div class="al-sev">${a.sev.toUpperCase()} SEVERITY</div>
+        <div class="al-title">${escHtml(a.title)}</div>
+        <div class="al-desc">${escHtml(a.desc)}</div>
+      </div>
+    `).join('');
+  } else if(currentRpMode==='dns') {
+    const dns=s.dns;
+    if(!dns.length){document.getElementById('rp-body').innerHTML='<div style="padding:20px;text-align:center;color:var(--amber-dim);font-size:9px;letter-spacing:0.06em;">NO DNS ACTIVITY</div>';return;}
+    document.getElementById('rp-body').innerHTML=dns.map(d=>`
+      <div style="border:1px solid var(--border);padding:7px;margin-bottom:4px;background:var(--bg);">
+        <div style="font-size:10px;color:var(--cyan);margin-bottom:2px;">${escHtml(d.query)}</div>
+        <div style="font-size:9px;color:var(--amber-dim);">${d.type} → ${d.answer||'?'}${d.ttl?' · TTL '+d.ttl+'s':''}</div>
+      </div>
+    `).join('');
   }
 }
 
-// ===================== DATABASE VIEW =====================
+// ── DB VIEW ──
 function updateDbView() {
-  const tbl = (rows, cols) => {
-    if(!rows.length) return '<div style="padding:20px;text-align:center;color:var(--text3);font-size:12px;">No records</div>';
-    return `<table class="files-table" style="width:100%">
-      <thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead>
-      <tbody>${rows.slice(0,20).map(r=>`<tr>${cols.map(c=>`<td class="db-col val">${escHtml(String(r[c]??''))}</td>`).join('')}</tr>`).join('')}</tbody>
-    </table>`;
+  const tbl=(rows,cols)=>{
+    if(!rows.length)return'<div style="padding:16px;text-align:center;color:var(--amber-dim);font-size:10px;">NO RECORDS</div>';
+    return`<table class="db-tbl"><thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${rows.slice(0,15).map(r=>`<tr>${cols.map(c=>`<td title="${escHtml(String(r[c]??''))}">${escHtml(String(r[c]??''))}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
   };
-  document.getElementById('db-sessions-table').innerHTML = tbl(db.sessions, ['id','proto','srcHost','dstHost','bytes','state','alerts']);
-  document.getElementById('db-files-table').innerHTML = tbl(db.files, ['name','mime','size','entropy','sessionId']);
-  document.getElementById('db-dns-table').innerHTML = tbl(db.dns, ['query','type','answer','ttl','sessionId']);
-  document.getElementById('db-alerts-table').innerHTML = tbl(db.alerts, ['sev','title','sessionId']);
+  document.getElementById('db-sessions-table').innerHTML=tbl(db.sessions,['id','proto','srcHost','dstHost','bytes','state','alerts']);
+  document.getElementById('db-files-table').innerHTML=tbl(db.files,['name','mime','size','entropy','sessionId']);
+  document.getElementById('db-dns-table').innerHTML=tbl(db.dns,['query','type','answer','ttl','sessionId']);
+  document.getElementById('db-alerts-table').innerHTML=tbl(db.alerts,['sev','title','sessionId']);
 }
 
-// ===================== SEARCH =====================
-const quickTags = ['credentials', 'PDF', 'exfiltration', 'DNS', 'FTP', '192.168', 'Authorization'];
-document.getElementById('search-tags').innerHTML = quickTags.map(t=>
-  `<button class="proto-chip" onclick="document.getElementById('search-query').value='${t}';doSearch()" style="font-size:11px;">${t}</button>`
+// ── SEARCH ──
+const quickTags=['credentials','PDF','exfiltration','DNS','FTP','192.168','Authorization','PASS'];
+document.getElementById('search-tags').innerHTML=quickTags.map(t=>
+  `<button class="qtag" onclick="document.getElementById('search-query').value='${t}';doSearch()">${t}</button>`
 ).join('');
 
 function doSearch() {
-  const q = document.getElementById('search-query').value.toLowerCase().trim();
-  if(!q){ document.getElementById('search-results').innerHTML=''; return; }
-  if(!sessions.length){ document.getElementById('search-results').innerHTML='<div style="color:var(--text3);font-size:12px;">No data loaded — go to Capture tab and load a file</div>'; return; }
-
-  const results = [];
+  const q=document.getElementById('search-query').value.toLowerCase().trim();
+  if(!q){document.getElementById('search-results').innerHTML='';return;}
+  if(!sessions.length){document.getElementById('search-results').innerHTML='<div style="color:var(--amber-dim);font-size:10px;letter-spacing:0.06em;">NO DATA LOADED — GO TO CAPTURE TAB FIRST</div>';return;}
+  const results=[];
   sessions.forEach(s=>{
-    const fields = [
-      s.src,s.dst,s.srcHost,s.dstHost,s.proto,
-      JSON.stringify(s.request.headers),
-      s.request.body||'',
-      JSON.stringify(s.response.headers),
-      s.response.body||'',
-      ...s.files.map(f=>f.name+' '+f.mime+' '+f.md5),
-      ...s.dns.map(d=>d.query+' '+d.answer),
-      ...s.alerts.map(a=>a.title+' '+a.desc)
-    ];
-    const matchingFields = fields.filter(f=>f.toLowerCase().includes(q));
-    if(matchingFields.length) {
-      results.push({session:s, matches:matchingFields, score:matchingFields.length});
-    }
+    const fields=[s.src,s.dst,s.srcHost,s.dstHost,s.proto,JSON.stringify(s.request.headers),s.request.body||'',JSON.stringify(s.response.headers),s.response.body||'',...s.files.map(f=>f.name+' '+f.mime+' '+f.md5),...s.dns.map(d=>d.query+' '+(d.answer||'')),...s.alerts.map(a=>a.title+' '+a.desc)];
+    const matches=fields.filter(f=>f.toLowerCase().includes(q));
+    if(matches.length)results.push({session:s,matches,score:matches.length});
   });
-
   results.sort((a,b)=>b.score-a.score);
-  document.getElementById('search-results').innerHTML = results.length ? results.map(r=>`
+  document.getElementById('search-results').innerHTML=results.length?results.map(r=>`
     <div class="result-card" onclick="switchTab('capture');setTimeout(()=>selectSession('${r.session.id}'),50)">
-      <div class="rc-header">
-        <div class="shc-badges" style="gap:4px">
-          <span class="badge badge-blue">${r.session.proto}</span>
-          <span style="font-size:11px;color:var(--text)">${r.session.srcHost} → ${r.session.dstHost}</span>
+      <div class="rc-hdr">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="rc-proto">${r.session.proto}</span>
+          <span class="rc-host">${r.session.srcHost} → ${r.session.dstHost}</span>
         </div>
-        <span class="rc-id">${r.session.id} • ${r.score} match${r.score>1?'es':''}</span>
+        <span class="rc-score">${r.score} MATCH${r.score>1?'ES':''} · ${r.session.id}</span>
       </div>
       <div class="rc-body">${r.matches.slice(0,3).map(m=>highlightMatch(m,q)).join('<br>')}</div>
     </div>
-  `).join('') : '<div style="color:var(--text3);font-size:12px;padding:10px 0;">No results found</div>';
+  `).join(''):'<div style="color:var(--amber-dim);font-size:10px;letter-spacing:0.06em;padding:10px 0;">NO RESULTS FOUND</div>';
 }
 
-function highlightMatch(text, q) {
-  const idx = text.toLowerCase().indexOf(q);
+function highlightMatch(text,q) {
+  const idx=text.toLowerCase().indexOf(q);
   if(idx<0)return escHtml(text.slice(0,80))+'...';
-  const start = Math.max(0,idx-30);
-  const end = Math.min(text.length, idx+q.length+40);
-  return (start>0?'...':'')+escHtml(text.slice(start,idx))+`<span class="match">${escHtml(text.slice(idx,idx+q.length))}</span>`+escHtml(text.slice(idx+q.length,end))+(end<text.length?'...':'');
+  const start=Math.max(0,idx-30),end=Math.min(text.length,idx+q.length+40);
+  return(start>0?'...':'')+escHtml(text.slice(start,idx))+`<span class="match">${escHtml(text.slice(idx,idx+q.length))}</span>`+escHtml(text.slice(idx+q.length,end))+(end<text.length?'...':'');
 }
 
-// ===================== TAB SWITCHING =====================
+// ── TAB SWITCHING ──
 function switchTab(name) {
-  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',b.textContent.toLowerCase().includes(name)));
+  document.querySelectorAll('.tb-btn').forEach(b=>b.classList.toggle('active',b.textContent.toLowerCase().includes(name)));
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id===`tab-${name}`));
 }
 
-// ===================== UTILS =====================
-function formatBytes(n) {
-  if(n<1024)return n+' B';
-  if(n<1048576)return (n/1024).toFixed(1)+' KB';
-  return (n/1048576).toFixed(1)+' MB';
-}
-function formatTime(ts) {
-  const d=new Date(ts);
-  return d.toLocaleTimeString('en',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
-}
-function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function extractFile(name) {
-  alert(`In a real deployment, "${name}" would be extracted and saved from the reassembled stream data.`);
+// ── FILE MODAL ──
+function openFileModal(idx) {
+  const f=selectedSession.files[idx];
+  if(!f)return;
+  currentModalFile=f;
+  document.getElementById('modal-icon').textContent=f.icon;
+  document.getElementById('modal-filename').textContent=f.name;
+  document.getElementById('modal-meta').innerHTML=`<span>${formatBytes(f.size)}</span><span>${f.mime}</span><span style="color:${f.entropy>7?'var(--red)':f.entropy>5?'var(--amber)':'var(--green)'}">ENTROPY ${f.entropy.toFixed(2)}</span>`;
+  document.getElementById('modal-footer-meta').innerHTML=`<span>MD5: ${f.md5}</span><span>SESSION: ${selectedSession.id}</span>`;
+  renderModalPreview(f);renderModalStrings(f);renderModalHashes(f);
+  document.querySelectorAll('.modal-tab').forEach((t,i)=>t.classList.toggle('on',i===0));
+  document.querySelectorAll('.modal-pane').forEach((p,i)=>p.classList.toggle('on',i===0));
+  document.getElementById('file-modal').classList.remove('hidden');
+  document.body.style.overflow='hidden';
 }
 
-// Drag/drop
-const dz = document.getElementById('drop-zone');
+function closeFileModal(e) {
+  if(e&&e.target!==document.getElementById('file-modal'))return;
+  document.getElementById('file-modal').classList.add('hidden');
+  document.body.style.overflow='';
+}
+
+function switchModalTab(tab,el) {
+  document.querySelectorAll('.modal-tab').forEach(t=>t.classList.remove('on'));
+  document.querySelectorAll('.modal-pane').forEach(p=>p.classList.remove('on'));
+  el.classList.add('on');
+  document.getElementById(`modal-${tab}`).classList.add('on');
+}
+
+function renderModalPreview(f) {
+  const el=document.getElementById('modal-preview');
+  if(!f.content){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--amber-dim);font-size:10px;letter-spacing:0.06em;">BINARY FILE — NO PREVIEW AVAILABLE<br><span style="font-size:9px;opacity:0.6;">USE EXTRACT TO SAVE AND OPEN LOCALLY</span></div>';return;}
+  const c=f.content;
+  if(c.type==='pdf'){
+    el.innerHTML=c.pages.map((p,i)=>`<div class="pdf-page"><div class="pdf-pg-num">PAGE ${i+1} OF ${c.pages.length}</div><div class="pdf-heading">${escHtml(p.heading)}</div>${p.body?`<div class="pdf-body">${escHtml(p.body).replace(/\n/g,'<br>')}</div>`:''}${p.table?`<table class="pdf-tbl"><thead><tr>${p.table.headers.map(h=>`<th>${escHtml(h)}</th>`).join('')}</tr></thead><tbody>${p.table.rows.map(r=>`<tr>${r.map(c=>`<td>${escHtml(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`:''}</div>`).join('');
+  } else if(c.type==='csv'){
+    el.innerHTML=`<div class="csv-warn">⚠ SHOWING FIRST ${c.rows.length} OF ${c.totalRows.toLocaleString()} ROWS — SENSITIVE PII DETECTED (SSN, CREDIT CARD, EMAIL)</div><div style="overflow-x:auto;"><table class="csv-tbl"><thead><tr>${c.headers.map(h=>`<th>${escHtml(h)}</th>`).join('')}</tr></thead><tbody>${c.rows.map(r=>`<tr>${r.map((cell,i)=>`<td class="${['ssn','credit_card','email'].includes(c.headers[i])?'pii':''}">${escHtml(cell)}</td>`).join('')}</tr>`).join('')}</tbody></table></div><div style="font-size:9px;color:var(--amber-dim);margin-top:6px;">... ${(c.totalRows-c.rows.length).toLocaleString()} MORE ROWS</div>`;
+  } else if(c.type==='xlsx'){
+    let active=0;
+    const renderSheet=idx=>{const sh=c.sheets[idx];return`<table class="csv-tbl" style="min-width:500px"><thead><tr>${sh.headers.map(h=>`<th>${escHtml(h)}</th>`).join('')}</tr></thead><tbody>${sh.rows.map(r=>`<tr>${r.map(cell=>`<td>${escHtml(cell)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;};
+    el.innerHTML=`<div style="display:flex;gap:0;margin-bottom:8px;border-bottom:1px solid var(--border2);">${c.sheets.map((s,i)=>`<button class="modal-tab ${i===0?'on':''}" style="border-bottom:2px solid ${i===0?'var(--amber)':'transparent'};" onclick="this.parentNode.querySelectorAll('button').forEach((b,j)=>{b.classList.toggle('on',j===this.dataset.idx*1);b.style.borderBottomColor=j===this.dataset.idx*1?'var(--amber)':'transparent';});document.getElementById('xlsx-body').innerHTML=window._xlsxSheets[this.dataset.idx*1];" data-idx="${i}">${escHtml(s.name)}</button>`).join('')}</div><div id="xlsx-body" style="overflow-x:auto;">${renderSheet(0)}</div>`;
+    window._xlsxSheets=c.sheets.map((_,i)=>renderSheet(i));
+  }
+}
+
+function renderModalStrings(f) {
+  const strings=[];
+  if(f.content?.type==='pdf'){strings.push(...[{off:'0x0024',val:'%PDF-1.4',t:''},{off:'0x0040',val:'Adobe Acrobat 23.0',t:''},{off:'0x0180',val:'Annual Report 2024',t:''},{off:'0x02a0',val:'reports@corp.local',t:'email'},{off:'0x03c4',val:'https://investor.example.com/reports',t:'url'},{off:'0x0520',val:'Author: CFO Office',t:''},{off:'0x0600',val:'CONFIDENTIAL — DO NOT DISTRIBUTE',t:'cred'}]);}
+  else if(f.content?.type==='csv'){strings.push(...[{off:'0x0000',val:'customer_id,first_name,last_name,email,phone,ssn',t:''},{off:'0x0060',val:'j.harrington@email.com',t:'email'},{off:'0x00c0',val:'s.chen@webmail.net',t:'email'},{off:'0x0200',val:'185.220.101.42',t:'ip'},{off:'0x0480',val:'SSN:***-**-4821',t:'cred'},{off:'0x0560',val:'4111-XXXX-XXXX-1234',t:'cred'},{off:'0x0720',val:'Summer2024!',t:'cred'}]);}
+  else if(f.content?.type==='xlsx'){strings.push(...[{off:'0x0000',val:'[Content_Types].xml',t:''},{off:'0x0080',val:'Microsoft Excel 365',t:''},{off:'0x0100',val:'Q4 Financial Report — CONFIDENTIAL',t:'cred'},{off:'0x0200',val:'reports@corp.local',t:'email'},{off:'0x02c0',val:'external@gmail.com',t:'email'},{off:'0x0340',val:'https://corp.sharepoint.com/sites/finance',t:'url'},{off:'0x0580',val:'LastModifiedBy: jsmith',t:'cred'}]);}
+  else{strings.push({off:'0x0000',val:'NO STRINGS EXTRACTED',t:''});}
+  document.getElementById('modal-strings').innerHTML=`
+    <div style="font-size:9px;color:var(--amber-dim);letter-spacing:0.06em;margin-bottom:8px;">// ${strings.length} STRINGS EXTRACTED (MIN LENGTH 6) · <span style="color:var(--red)">RED=SENSITIVE</span> · <span style="color:var(--cyan)">CYAN=URL</span> · <span style="color:var(--amber2)">AMBER=EMAIL</span> · <span style="color:var(--green)">GREEN=IP</span></div>
+    ${strings.map(s=>`<div class="str-line"><span class="str-off">${s.off}</span><span class="str-v str-${s.t||'plain'}">${escHtml(s.val)}</span></div>`).join('')}
+  `;
+}
+
+function renderModalHashes(f) {
+  const ec=f.entropy>7?'var(--red)':f.entropy>5?'var(--amber)':'var(--green)';
+  const en=f.entropy>7?'HIGH ENTROPY — POSSIBLE ENCRYPTION/COMPRESSION. EXAMINE CLOSELY.':f.entropy>5?'MODERATE — STRUCTURED BINARY OR COMPRESSED TEXT.':'LOW — PLAINTEXT OR UNCOMPRESSED STRUCTURED DATA.';
+  const mimeMap={'application/pdf':'25 50 44 46 2D 31 2E (%PDF-1.)','text/csv':'63 75 73 74 6F (ASCII TEXT)','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':'50 4B 03 04 (PK ZIP HEADER)'};
+  document.getElementById('modal-hashes').innerHTML=`
+    <div class="section"><div class="section-hdr">CRYPTOGRAPHIC HASHES</div><div class="kv-grid">
+      <div class="kv-key">MD5</div><div class="kv-val" style="font-size:10px;word-break:break-all">${f.md5}</div>
+      <div class="kv-key">SHA-256</div><div class="kv-val dim" style="font-size:10px;word-break:break-all">${f.sha256}</div>
+      <div class="kv-key">SHA-1 (EST.)</div><div class="kv-val dim" style="font-size:10px;word-break:break-all">${f.md5.split('').reverse().join('').repeat(2).slice(0,40)}</div>
+    </div></div>
+    <div class="section"><div class="section-hdr">ENTROPY ANALYSIS</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <div class="hash-ent-bar" style="flex:1"><div class="hash-ent-fill" style="width:${(f.entropy/8)*100}%;background:${ec};"></div></div>
+        <span style="font-family:var(--display);font-size:14px;font-weight:700;color:${ec};text-shadow:0 0 8px ${ec}">${f.entropy.toFixed(4)}</span>
+      </div>
+      <div style="font-size:9px;color:${ec};letter-spacing:0.04em;">${en}</div>
+    </div>
+    <div class="section"><div class="section-hdr">FILE IDENTIFICATION</div><div class="kv-grid">
+      <div class="kv-key">FILENAME</div><div class="kv-val">${escHtml(f.name)}</div>
+      <div class="kv-key">DECLARED MIME</div><div class="kv-val">${escHtml(f.mime)}</div>
+      <div class="kv-key">SIZE</div><div class="kv-val">${f.size.toLocaleString()} BYTES</div>
+      <div class="kv-key">MAGIC BYTES</div><div class="kv-val dim" style="font-size:9px;">${mimeMap[f.mime]||'-- UNKNOWN --'}</div>
+      <div class="kv-key">VIRUSTOTAL</div><div class="kv-val dim">NOT SUBMITTED — CLICK EXTRACT TO UPLOAD</div>
+    </div></div>
+  `;
+}
+
+// ── UTILS ──
+function formatBytes(n){if(n<1024)return n+' B';if(n<1048576)return(n/1024).toFixed(1)+' KB';return(n/1048576).toFixed(1)+' MB';}
+function formatTime(ts){return new Date(ts).toLocaleTimeString('en',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});}
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function extractFile(name){alert(`In a real deployment, "${name}" would be extracted from the reassembled stream.`);}
+
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){document.getElementById('file-modal').classList.add('hidden');document.body.style.overflow='';}});
+
+// drag/drop
+const dz=document.getElementById('drop-zone');
 dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag-over');});
 dz.addEventListener('dragleave',()=>dz.classList.remove('drag-over'));
 dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag-over');handleFileUpload(e.dataTransfer.files);});
