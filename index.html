@@ -55,7 +55,7 @@
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{height:100%;overflow:hidden;}
-body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13px;line-height:1.6;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.6;}
 ::-webkit-scrollbar{width:3px;}
 
 .hm-wrap{padding:24px;max-width:1100px;margin:0 auto;}
@@ -86,8 +86,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13
 
 ::-webkit-scrollbar-thumb{background:var(--border2);}
 
-#app{display:grid;grid-template-rows:48px 1fr;height:100vh;}
-.main-grid{display:grid;grid-template-columns:220px 1fr 240px;height:100%;overflow:hidden;}
+#app{display:grid;grid-template-rows:56px 1fr;height:100vh;}
+.main-grid{display:grid;grid-template-columns:260px 1fr 280px;height:100%;overflow:hidden;}
 
 .topbar{display:flex;align-items:center;padding:0 24px;border-bottom:1px solid var(--border);background:var(--bg);}
 .tb-logo{display:flex;align-items:center;gap:8px;margin-right:40px;}
@@ -350,7 +350,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13
 .hidden{display:none!important;}
 .tab-panel{display:none;}
 .tab-panel.active{display:grid;}
-#tab-database.active{display:block;overflow-y:auto;height:calc(100vh - 48px);}
+#tab-database.active{display:block;overflow-y:auto;height:calc(100vh - 56px);}
+#tab-heatmap.active{display:block;overflow-y:auto;height:calc(100vh - 56px);}
 #tab-search.active{display:flex;justify-content:center;overflow-y:auto;height:calc(100vh - 48px);}
 </style>
 </head>
@@ -827,8 +828,6 @@ function selectSession(id) {
   switchDetailTab(activeDetailTab);
 }
 
-let activeProtos = new Set();
-
 function toggleProtoFilter(el, proto) {
   if(activeProtos.has(proto)) {
     activeProtos.delete(proto);
@@ -1089,7 +1088,7 @@ function highlightMatch(text,q) {
 function switchTab(name) {
   document.querySelectorAll('.tb-btn').forEach(b=>b.classList.toggle('active',b.textContent.toLowerCase().includes(name)));
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id===`tab-${name}`));
-  if(name==='heatmap') renderHeatmap();
+  if(name==='heatmap') setTimeout(renderHeatmap, 50);
 }
 
 // ── FILE MODAL ──
