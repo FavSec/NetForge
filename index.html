@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NetForge — Session Forensics</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c10;
+    --bg2: #0f1118;
+    --bg3: #141720;
+    --bg4: #1b1f2e;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --text: #d4d8e8;
+    --text2: #7c8099;
+    --text3: #4a4f66;
+    --accent: #4f8ef7;
+    --accent2: #2d5fd4;
+    --green: #2ecc71;
+    --amber: #f0a500;
+    --red: #e74c3c;
+    --purple: #9b59b6;
+    --teal: #1abc9c;
+    --cyan: #00d4ff;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:var(--sans); min-height:100vh; overflow-x:hidden; }
+
+  /* Scanline overlay */
+  body::after {
+    content:''; position:fixed; inset:0; pointer-events:none; z-index:9999;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+  }
+
+  /* === HEADER === */
+  .hdr { display:flex; align-items:center; justify-content:space-between; padding:0 24px; height:52px; border-bottom:1px solid var(--border2); background:var(--bg2); position:sticky; top:0; z-index:100; }
+  .logo { display:flex; align-items:center; gap:10px; }
+  .logo-mark { width:28px; height:28px; background:var(--accent); border-radius:6px; display:flex; align-items:center; justify-content:center; }
+  .logo-mark svg { width:16px; height:16px; }
+  .logo-name { font-size:15px; font-weight:700; letter-spacing:0.04em; color:#fff; }
+  .logo-name span { color:var(--accent); }
+  .hdr-center { display:flex; gap:2px; }
+  .tab-btn { font-family:var(--sans); font-size:12px; font-weight:500; letter-spacing:0.05em; text-transform:uppercase; padding:6px 16px; border-radius:6px; border:none; background:transparent; color:var(--text2); cursor:pointer; transition:all .15s; }
+  .tab-btn.active { background:var(--bg4); color:var(--text); }
+  .tab-btn:hover:not(.active) { color:var(--text); }
+  .hdr-right { display:flex; align-items:center; gap:12px; }
+  .status-dot { width:6px; height:6px; border-radius:50%; background:var(--green); box-shadow:0 0 6px var(--green); animation:pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+  .status-label { font-family:var(--mono); font-size:11px; color:var(--text2); }
+
+  /* === LAYOUT === */
+  .app { display:flex; height:calc(100vh - 52px); }
+  .sidebar { width:260px; flex-shrink:0; border-right:1px solid var(--border); background:var(--bg2); display:flex; flex-direction:column; overflow:hidden; }
+  .main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+
+  /* === SIDEBAR === */
+  .sidebar-section { padding:12px 16px; border-bottom:1px solid var(--border); }
+  .sidebar-title { font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text3); font-weight:600; margin-bottom:10px; }
+  .capture-zone { border:1.5px dashed var(--border2); border-radius:10px; padding:20px 12px; text-align:center; cursor:pointer; transition:all .2s; position:relative; }
+  .capture-zone:hover, .capture-zone.drag-over { border-color:var(--accent); background:rgba(79,142,247,0.05); }
+  .capture-zone input { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+  .capture-icon { font-size:24px; margin-bottom:6px; }
+  .capture-text { font-size:11px; color:var(--text2); line-height:1.5; }
+  .capture-text strong { color:var(--text); display:block; margin-bottom:2px; font-size:12px; }
+  .formats { display:flex; gap:4px; flex-wrap:wrap; margin-top:8px; justify-content:center; }
+  .fmt-badge { font-family:var(--mono); font-size:9px; padding:2px 6px; border-radius:3px; background:var(--bg4); color:var(--accent); border:1px solid rgba(79,142,247,0.2); }
+  .demo-btn { width:100%; margin-top:10px; padding:8px; border-radius:7px; border:1px solid var(--border2); background:var(--bg3); color:var(--text); font-family:var(--sans); font-size:12px; font-weight:500; cursor:pointer; transition:all .15s; }
+  .demo-btn:hover { border-color:var(--accent); color:var(--accent); }
+
+  .filter-input { width:100%; background:var(--bg3); border:1px solid var(--border); border-radius:7px; padding:7px 10px; color:var(--text); font-family:var(--mono); font-size:12px; outline:none; transition:border .15s; }
+  .filter-input:focus { border-color:var(--accent); }
+  .filter-input::placeholder { color:var(--text3); }
+
+  .proto-filters { display:flex; gap:4px; flex-wrap:wrap; margin-top:8px; }
+  .proto-chip { font-family:var(--mono); font-size:10px; padding:3px 8px; border-radius:4px; border:1px solid var(--border); background:transparent; color:var(--text2); cursor:pointer; transition:all .15s; }
+  .proto-chip.active { border-color:var(--accent); color:var(--accent); background:rgba(79,142,247,0.08); }
+  .proto-chip:hover:not(.active) { border-color:var(--border2); color:var(--text); }
+
+  .sessions-list { flex:1; overflow-y:auto; padding:8px; }
+  .sessions-list::-webkit-scrollbar { width:4px; }
+  .sessions-list::-webkit-scrollbar-track { background:transparent; }
+  .sessions-list::-webkit-scrollbar-thumb { background:var(--bg4); border-radius:2px; }
+  .session-item { padding:10px 10px; border-radius:8px; margin-bottom:4px; cursor:pointer; border:1px solid transparent; transition:all .15s; }
+  .session-item:hover { background:var(--bg3); border-color:var(--border); }
+  .session-item.selected { background:var(--bg4); border-color:var(--accent); }
+  .si-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:5px; }
+  .si-proto { font-family:var(--mono); font-size:9px; font-weight:600; padding:2px 6px; border-radius:3px; letter-spacing:0.05em; }
+  .proto-http { background:rgba(46,204,113,0.15); color:var(--green); }
+  .proto-https { background:rgba(79,142,247,0.15); color:var(--accent); }
+  .proto-dns { background:rgba(240,165,0,0.15); color:var(--amber); }
+  .proto-ftp { background:rgba(155,89,182,0.15); color:var(--purple); }
+  .proto-smtp { background:rgba(26,188,156,0.15); color:var(--teal); }
+  .proto-tcp { background:rgba(255,255,255,0.08); color:var(--text2); }
+  .si-time { font-family:var(--mono); font-size:9px; color:var(--text3); }
+  .si-hosts { font-size:11px; color:var(--text); font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:3px; }
+  .si-meta { display:flex; gap:8px; }
+  .si-bytes { font-family:var(--mono); font-size:10px; color:var(--text2); }
+  .si-flags { display:flex; gap:3px; }
+  .si-flag { width:6px; height:6px; border-radius:50%; }
+  .flag-file { background:var(--amber); }
+  .flag-creds { background:var(--red); }
+  .flag-dns { background:var(--purple); }
+  .flag-tls { background:var(--teal); }
+
+  /* === MAIN AREA === */
+  .toolbar { display:flex; align-items:center; gap:8px; padding:10px 16px; border-bottom:1px solid var(--border); background:var(--bg2); flex-shrink:0; }
+  .toolbar-btn { display:flex; align-items:center; gap:5px; padding:6px 12px; border-radius:6px; border:1px solid var(--border); background:var(--bg3); color:var(--text2); font-family:var(--sans); font-size:12px; font-weight:500; cursor:pointer; transition:all .15s; white-space:nowrap; }
+  .toolbar-btn:hover { border-color:var(--border2); color:var(--text); }
+  .toolbar-btn.primary { border-color:var(--accent2); background:rgba(79,142,247,0.1); color:var(--accent); }
+  .toolbar-btn.primary:hover { background:rgba(79,142,247,0.2); }
+  .toolbar-sep { width:1px; height:20px; background:var(--border); }
+  .toolbar-stat { font-family:var(--mono); font-size:11px; color:var(--text3); }
+  .toolbar-stat span { color:var(--text2); }
+  .spacer { flex:1; }
+
+  /* === PANELS === */
+  .content-area { flex:1; display:flex; overflow:hidden; }
+  .detail-panel { flex:1; overflow:hidden; display:flex; flex-direction:column; }
+  .right-panel { width:320px; border-left:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; flex-shrink:0; }
+
+  /* EMPTY STATE */
+  .empty-state { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; color:var(--text3); }
+  .empty-icon { font-size:40px; opacity:0.4; }
+  .empty-title { font-size:14px; font-weight:500; color:var(--text2); }
+  .empty-sub { font-size:12px; text-align:center; max-width:260px; line-height:1.6; }
+
+  /* === DETAIL VIEW === */
+  .detail-tabs { display:flex; gap:0; border-bottom:1px solid var(--border); background:var(--bg2); flex-shrink:0; }
+  .detail-tab { font-family:var(--sans); font-size:11px; font-weight:500; letter-spacing:0.04em; padding:10px 16px; border:none; background:transparent; color:var(--text3); cursor:pointer; border-bottom:2px solid transparent; transition:all .15s; text-transform:uppercase; }
+  .detail-tab.active { color:var(--accent); border-bottom-color:var(--accent); }
+  .detail-tab:hover:not(.active) { color:var(--text2); }
+  .detail-content { flex:1; overflow-y:auto; padding:16px; }
+  .detail-content::-webkit-scrollbar { width:4px; }
+  .detail-content::-webkit-scrollbar-track { background:transparent; }
+  .detail-content::-webkit-scrollbar-thumb { background:var(--bg4); border-radius:2px; }
+
+  /* SESSION HEADER CARD */
+  .session-hdr-card { background:var(--bg3); border:1px solid var(--border); border-radius:10px; padding:16px; margin-bottom:12px; }
+  .shc-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+  .shc-title { font-size:14px; font-weight:600; color:#fff; }
+  .shc-badges { display:flex; gap:6px; }
+  .badge { font-family:var(--mono); font-size:10px; padding:3px 8px; border-radius:4px; font-weight:600; }
+  .badge-green { background:rgba(46,204,113,0.15); color:var(--green); border:1px solid rgba(46,204,113,0.2); }
+  .badge-blue { background:rgba(79,142,247,0.15); color:var(--accent); border:1px solid rgba(79,142,247,0.2); }
+  .badge-amber { background:rgba(240,165,0,0.15); color:var(--amber); border:1px solid rgba(240,165,0,0.2); }
+  .badge-red { background:rgba(231,76,60,0.15); color:var(--red); border:1px solid rgba(231,76,60,0.2); }
+  .shc-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+  .shc-field { }
+  .shc-label { font-size:10px; text-transform:uppercase; letter-spacing:0.08em; color:var(--text3); margin-bottom:3px; }
+  .shc-value { font-family:var(--mono); font-size:12px; color:var(--text); word-break:break-all; }
+  .shc-value.accent { color:var(--accent); }
+  .shc-value.green { color:var(--green); }
+  .shc-value.red { color:var(--red); }
+
+  /* META GRID */
+  .meta-section { margin-bottom:14px; }
+  .meta-section-title { font-size:11px; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; color:var(--text3); margin-bottom:8px; padding-bottom:6px; border-bottom:1px solid var(--border); }
+  .meta-grid { display:grid; grid-template-columns:140px 1fr; gap:4px 8px; }
+  .meta-key { font-family:var(--mono); font-size:11px; color:var(--text3); padding:3px 0; align-self:start; }
+  .meta-val { font-family:var(--mono); font-size:11px; color:var(--text); padding:3px 0; word-break:break-all; }
+  .meta-val.highlight { color:var(--amber); }
+  .meta-val.danger { color:var(--red); }
+  .meta-val.good { color:var(--green); }
+
+  /* PAYLOAD VIEWER */
+  .payload-viewer { background:var(--bg); border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+  .pv-header { display:flex; align-items:center; justify-content:space-between; padding:8px 12px; background:var(--bg3); border-bottom:1px solid var(--border); }
+  .pv-title { font-family:var(--mono); font-size:11px; color:var(--text2); }
+  .pv-dir { font-size:10px; padding:2px 8px; border-radius:3px; }
+  .pv-dir.req { background:rgba(240,165,0,0.15); color:var(--amber); }
+  .pv-dir.res { background:rgba(46,204,113,0.15); color:var(--green); }
+  .pv-body { padding:12px; font-family:var(--mono); font-size:11px; line-height:1.7; color:var(--text2); overflow-x:auto; max-height:220px; overflow-y:auto; white-space:pre-wrap; word-break:break-all; }
+  .pv-body::-webkit-scrollbar { width:3px; height:3px; }
+  .pv-body::-webkit-scrollbar-thumb { background:var(--bg4); }
+  .pv-body .key { color:var(--accent); }
+  .pv-body .val { color:var(--green); }
+  .pv-body .method { color:var(--amber); font-weight:600; }
+  .pv-body .status-ok { color:var(--green); font-weight:600; }
+  .pv-body .status-err { color:var(--red); font-weight:600; }
+  .pv-body .comment { color:var(--text3); }
+  .payload-row { margin-bottom:8px; }
+
+  /* FILES TABLE */
+  .files-table { width:100%; border-collapse:collapse; font-family:var(--mono); font-size:11px; }
+  .files-table th { text-align:left; padding:8px 10px; font-size:10px; text-transform:uppercase; letter-spacing:0.06em; color:var(--text3); border-bottom:1px solid var(--border); }
+  .files-table td { padding:8px 10px; border-bottom:1px solid var(--border); vertical-align:middle; }
+  .files-table tr:last-child td { border-bottom:none; }
+  .files-table tr:hover td { background:var(--bg3); }
+  .file-icon { width:26px; height:26px; border-radius:5px; display:flex; align-items:center; justify-content:center; font-size:12px; margin-right:8px; flex-shrink:0; }
+  .file-row { display:flex; align-items:center; }
+  .file-name { color:var(--text); font-weight:500; }
+  .file-type { color:var(--text3); font-size:10px; }
+  .file-size { color:var(--text2); }
+  .file-hash { color:var(--text3); font-size:10px; }
+  .entropy-bar { width:60px; height:6px; background:var(--bg4); border-radius:3px; overflow:hidden; display:inline-block; vertical-align:middle; margin-right:4px; }
+  .entropy-fill { height:100%; border-radius:3px; transition:width .3s; }
+  .dl-btn { padding:3px 8px; border-radius:4px; border:1px solid var(--border); background:transparent; color:var(--text2); font-family:var(--mono); font-size:10px; cursor:pointer; transition:all .15s; }
+  .dl-btn:hover { border-color:var(--accent); color:var(--accent); }
+
+  /* === HEX VIEW === */
+  .hex-view { font-family:var(--mono); font-size:11px; line-height:1.9; display:grid; grid-template-columns:60px 1fr 1fr; gap:0 16px; }
+  .hex-offset { color:var(--text3); }
+  .hex-bytes { color:var(--text2); letter-spacing:0.12em; }
+  .hex-bytes .h-red { color:var(--red); }
+  .hex-bytes .h-green { color:var(--green); }
+  .hex-bytes .h-blue { color:var(--accent); }
+  .hex-ascii { color:var(--text3); letter-spacing:0.04em; }
+  .hex-ascii .h-printable { color:var(--teal); }
+
+  /* === RIGHT PANEL === */
+  .rp-header { padding:12px 14px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+  .rp-title { font-size:12px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; color:var(--text2); }
+  .rp-body { flex:1; overflow-y:auto; padding:12px 14px; }
+  .rp-body::-webkit-scrollbar { width:3px; }
+  .rp-body::-webkit-scrollbar-thumb { background:var(--bg4); }
+
+  /* TIMELINE */
+  .timeline { position:relative; padding-left:18px; }
+  .timeline::before { content:''; position:absolute; left:6px; top:0; bottom:0; width:1px; background:var(--border2); }
+  .tl-item { position:relative; margin-bottom:14px; }
+  .tl-item::before { content:''; position:absolute; left:-15px; top:5px; width:7px; height:7px; border-radius:50%; border:1.5px solid; }
+  .tl-item.tl-req::before { border-color:var(--amber); background:rgba(240,165,0,0.2); }
+  .tl-item.tl-res::before { border-color:var(--green); background:rgba(46,204,113,0.2); }
+  .tl-item.tl-file::before { border-color:var(--purple); background:rgba(155,89,182,0.2); }
+  .tl-item.tl-dns::before { border-color:var(--teal); background:rgba(26,188,156,0.2); }
+  .tl-item.tl-tls::before { border-color:var(--accent); background:rgba(79,142,247,0.2); }
+  .tl-time { font-family:var(--mono); font-size:10px; color:var(--text3); margin-bottom:2px; }
+  .tl-label { font-size:11px; font-weight:500; color:var(--text); margin-bottom:2px; }
+  .tl-detail { font-family:var(--mono); font-size:10px; color:var(--text2); }
+
+  /* ALERTS */
+  .alert-item { display:flex; gap:8px; padding:10px; border-radius:7px; margin-bottom:6px; border:1px solid; }
+  .alert-item.sev-high { background:rgba(231,76,60,0.06); border-color:rgba(231,76,60,0.2); }
+  .alert-item.sev-med { background:rgba(240,165,0,0.06); border-color:rgba(240,165,0,0.2); }
+  .alert-item.sev-low { background:rgba(79,142,247,0.06); border-color:rgba(79,142,247,0.15); }
+  .alert-icon { font-size:13px; flex-shrink:0; margin-top:1px; }
+  .alert-title { font-size:11px; font-weight:600; color:var(--text); margin-bottom:2px; }
+  .alert-desc { font-family:var(--mono); font-size:10px; color:var(--text2); line-height:1.5; }
+
+  /* DB VIEW */
+  .db-view { padding:4px 0; }
+  .db-table-name { font-family:var(--mono); font-size:11px; font-weight:600; color:var(--accent); margin-bottom:8px; padding:6px 10px; background:var(--bg3); border-radius:6px; border:1px solid var(--border); }
+  .db-row { display:flex; justify-content:space-between; align-items:center; padding:5px 10px; border-radius:4px; margin-bottom:2px; }
+  .db-row:hover { background:var(--bg3); }
+  .db-col { font-family:var(--mono); font-size:10px; }
+  .db-col.key { color:var(--text3); }
+  .db-col.val { color:var(--text); text-align:right; max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .db-col.val.num { color:var(--teal); }
+  .db-sep { height:1px; background:var(--border); margin:8px 0; }
+
+  /* SEARCH DB */
+  .search-bar { display:flex; gap:6px; margin-bottom:14px; }
+  .search-input { flex:1; background:var(--bg3); border:1px solid var(--border); border-radius:7px; padding:8px 12px; color:var(--text); font-family:var(--mono); font-size:12px; outline:none; }
+  .search-input:focus { border-color:var(--accent); }
+  .search-btn { padding:8px 14px; border-radius:7px; border:1px solid var(--accent2); background:rgba(79,142,247,0.1); color:var(--accent); font-family:var(--sans); font-size:12px; font-weight:500; cursor:pointer; transition:all .15s; }
+  .search-btn:hover { background:rgba(79,142,247,0.2); }
+
+  .result-card { background:var(--bg3); border:1px solid var(--border); border-radius:8px; padding:12px; margin-bottom:8px; cursor:pointer; transition:all .15s; }
+  .result-card:hover { border-color:var(--border2); }
+  .rc-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+  .rc-id { font-family:var(--mono); font-size:10px; color:var(--text3); }
+  .rc-body { font-family:var(--mono); font-size:11px; color:var(--text2); line-height:1.6; }
+  .rc-body .match { color:var(--amber); background:rgba(240,165,0,0.1); border-radius:2px; padding:0 2px; }
+
+  /* PROGRESS */
+  .progress-wrap { position:fixed; bottom:20px; right:20px; background:var(--bg3); border:1px solid var(--border2); border-radius:10px; padding:12px 16px; min-width:260px; z-index:1000; box-shadow:0 8px 32px rgba(0,0,0,0.4); }
+  .progress-title { font-size:12px; font-weight:600; color:var(--text); margin-bottom:8px; display:flex; align-items:center; gap:8px; }
+  .progress-bar-wrap { background:var(--bg4); border-radius:4px; height:6px; overflow:hidden; margin-bottom:6px; }
+  .progress-bar { height:100%; background:var(--accent); border-radius:4px; transition:width .3s; }
+  .progress-detail { font-family:var(--mono); font-size:10px; color:var(--text3); }
+
+  /* STATS ROW */
+  .stats-row { display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; margin-bottom:14px; }
+  .stat-card { background:var(--bg3); border:1px solid var(--border); border-radius:8px; padding:12px; }
+  .stat-val { font-family:var(--mono); font-size:20px; font-weight:600; color:#fff; margin-bottom:2px; }
+  .stat-label { font-size:10px; text-transform:uppercase; letter-spacing:0.08em; color:var(--text3); }
+  .stat-delta { font-family:var(--mono); font-size:10px; color:var(--green); }
+
+  /* HIDDEN */
+  .hidden { display:none !important; }
+  .tab-panel { display:none; }
+  .tab-panel.active { display:block; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="hdr">
+  <div class="logo">
+    <div class="logo-mark">
+      <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M2 4L8 2L14 4V8C14 11.5 11 13.5 8 14.5C5 13.5 2 11.5 2 8V4Z" stroke="white" stroke-width="1.2" fill="none"/>
+        <path d="M5.5 8L7 9.5L10.5 6" stroke="white" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <span class="logo-name">Net<span>Forge</span></span>
+  </div>
+  <div class="hdr-center">
+    <button class="tab-btn active" onclick="switchTab('capture')">Capture</button>
+    <button class="tab-btn" onclick="switchTab('database')">Database</button>
+    <button class="tab-btn" onclick="switchTab('search')">Search</button>
+  </div>
+  <div class="hdr-right">
+    <div class="status-dot" id="status-dot"></div>
+    <span class="status-label" id="status-label">READY</span>
+  </div>
+</header>
+
+<!-- ===================== CAPTURE TAB ===================== -->
+<div id="tab-capture" class="app tab-panel active">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-title">Load Capture</div>
+      <div class="capture-zone" id="drop-zone">
+        <input type="file" accept=".pcap,.pcapng,.cap,.log,.json" multiple id="file-input" onchange="handleFileUpload(this.files)">
+        <div class="capture-icon">📡</div>
+        <div class="capture-text">
+          <strong>Drop capture file</strong>
+          or click to browse
+        </div>
+        <div class="formats">
+          <span class="fmt-badge">.pcap</span>
+          <span class="fmt-badge">.pcapng</span>
+          <span class="fmt-badge">.cap</span>
+          <span class="fmt-badge">.log</span>
+        </div>
+      </div>
+      <button class="demo-btn" onclick="loadDemoData()">⚡ Load Demo Capture</button>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-title">Filter</div>
+      <input class="filter-input" type="text" placeholder="ip, port, host, proto..." id="filter-input" oninput="applyFilter()">
+      <div class="proto-filters">
+        <button class="proto-chip active" onclick="toggleProto(this,'ALL')">ALL</button>
+        <button class="proto-chip" onclick="toggleProto(this,'HTTP')">HTTP</button>
+        <button class="proto-chip" onclick="toggleProto(this,'HTTPS')">TLS</button>
+        <button class="proto-chip" onclick="toggleProto(this,'DNS')">DNS</button>
+        <button class="proto-chip" onclick="toggleProto(this,'FTP')">FTP</button>
+        <button class="proto-chip" onclick="toggleProto(this,'SMTP')">SMTP</button>
+      </div>
+    </div>
+
+    <div class="sessions-list" id="sessions-list">
+      <div style="padding:20px 10px; text-align:center; color:var(--text3); font-size:12px;">
+        Load a capture file to see sessions
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="toolbar">
+      <button class="toolbar-btn primary" onclick="runAnalysis()" id="run-btn" disabled>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 2L10 6L3 10V2Z" fill="currentColor"/></svg>
+        Reassemble All
+      </button>
+      <button class="toolbar-btn" onclick="exportData()" id="export-btn" disabled>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1V8M3 5L6 8L9 5M2 10H10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Export JSON
+      </button>
+      <div class="toolbar-sep"></div>
+      <span class="toolbar-stat">Sessions: <span id="stat-sessions">0</span></span>
+      <span class="toolbar-stat">Files extracted: <span id="stat-files">0</span></span>
+      <span class="toolbar-stat">Alerts: <span id="stat-alerts" style="color:var(--red)">0</span></span>
+      <div class="spacer"></div>
+      <button class="toolbar-btn" onclick="clearAll()">Clear</button>
+    </div>
+
+    <div class="content-area">
+      <!-- DETAIL PANEL -->
+      <div class="detail-panel">
+        <div id="empty-detail" class="empty-state">
+          <div class="empty-icon">🔬</div>
+          <div class="empty-title">No session selected</div>
+          <div class="empty-sub">Load a capture file and select a session to begin forensic analysis</div>
+        </div>
+        <div id="session-detail" class="hidden" style="display:flex;flex-direction:column;height:100%;overflow:hidden;">
+          <div class="detail-tabs">
+            <button class="detail-tab active" onclick="switchDetailTab('overview')">Overview</button>
+            <button class="detail-tab" onclick="switchDetailTab('payload')">Payload</button>
+            <button class="detail-tab" onclick="switchDetailTab('files')">Files</button>
+            <button class="detail-tab" onclick="switchDetailTab('hex')">Hex</button>
+          </div>
+          <div class="detail-content" id="detail-overview"></div>
+          <div class="detail-content hidden" id="detail-payload"></div>
+          <div class="detail-content hidden" id="detail-files"></div>
+          <div class="detail-content hidden" id="detail-hex"></div>
+        </div>
+      </div>
+
+      <!-- RIGHT PANEL -->
+      <div class="right-panel" id="right-panel">
+        <div class="rp-header">
+          <span class="rp-title" id="rp-title">Timeline</span>
+          <button class="toolbar-btn" style="padding:3px 8px;font-size:10px;" onclick="toggleRpView()" id="rp-toggle">Alerts</button>
+        </div>
+        <div class="rp-body" id="rp-body">
+          <div style="color:var(--text3);font-size:12px;text-align:center;padding:20px 0;">Select a session</div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ===================== DATABASE TAB ===================== -->
+<div id="tab-database" class="app tab-panel" style="flex-direction:column;overflow-y:auto;">
+  <div style="padding:20px;max-width:1100px;margin:0 auto;width:100%;">
+    <div class="stats-row" id="db-stats">
+      <div class="stat-card"><div class="stat-val" id="db-stat-sessions">0</div><div class="stat-label">Sessions indexed</div></div>
+      <div class="stat-card"><div class="stat-val" id="db-stat-files">0</div><div class="stat-label">Files extracted</div></div>
+      <div class="stat-card"><div class="stat-val" id="db-stat-hosts">0</div><div class="stat-label">Unique hosts</div></div>
+      <div class="stat-card"><div class="stat-val" id="db-stat-alerts">0</div><div class="stat-label">Alerts raised</div><div class="stat-delta" id="db-stat-high" style="color:var(--red);"></div></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <div>
+        <div class="meta-section-title">sessions</div>
+        <div id="db-sessions-table" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+          <div style="padding:30px;text-align:center;color:var(--text3);font-size:12px;">No data — load a capture first</div>
+        </div>
+      </div>
+      <div>
+        <div class="meta-section-title">extracted_files</div>
+        <div id="db-files-table" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+          <div style="padding:30px;text-align:center;color:var(--text3);font-size:12px;">No data</div>
+        </div>
+      </div>
+      <div>
+        <div class="meta-section-title">dns_queries</div>
+        <div id="db-dns-table" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+          <div style="padding:30px;text-align:center;color:var(--text3);font-size:12px;">No data</div>
+        </div>
+      </div>
+      <div>
+        <div class="meta-section-title">alerts</div>
+        <div id="db-alerts-table" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+          <div style="padding:30px;text-align:center;color:var(--text3);font-size:12px;">No data</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== SEARCH TAB ===================== -->
+<div id="tab-search" class="app tab-panel" style="flex-direction:column;align-items:center;overflow-y:auto;">
+  <div style="padding:30px 20px;max-width:760px;width:100%;">
+    <div style="font-size:22px;font-weight:700;color:#fff;margin-bottom:4px;">Search Database</div>
+    <div style="font-size:13px;color:var(--text3);margin-bottom:24px;">Query sessions, files, hosts, credentials, and metadata</div>
+    <div class="search-bar">
+      <input class="search-input" type="text" id="search-query" placeholder='e.g. "Content-Type: application/pdf" or "password" or "192.168" ...' onkeydown="if(event.key==='Enter')doSearch()">
+      <button class="search-btn" onclick="doSearch()">Search</button>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:24px;" id="search-tags"></div>
+    <div id="search-results"></div>
+  </div>
+</div>
+
+<!-- PROGRESS TOAST -->
+<div class="progress-wrap hidden" id="progress-wrap">
+  <div class="progress-title">
+    <div class="status-dot"></div>
+    <span id="progress-title-text">Processing...</span>
+  </div>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar" id="progress-bar" style="width:0%"></div>
+  </div>
+  <div class="progress-detail" id="progress-detail">Initializing...</div>
+</div>
+
+<script>
+// ===================== DATA STORE =====================
+let sessions = [];
+let db = { sessions:[], files:[], dns:[], alerts:[], credentials:[], hosts:new Set() };
+let selectedSession = null;
+let rpMode = 'timeline';
+let activeProto = 'ALL';
+let activeDetailTab = 'overview';
+
+// ===================== DEMO DATA =====================
+function generateDemoData() {
+  const now = Date.now();
+  return [
+    {
+      id:'sess_001', proto:'HTTP', ts: now - 120000,
+      src:'10.0.1.45:53821', dst:'93.184.216.34:80',
+      srcHost:'workstation-7', dstHost:'example.com',
+      bytes:{ req:2048, res:45320 }, duration:342,
+      state:'CLOSED', flags:['file','dns'],
+      request:{ method:'GET', uri:'/download/report-2024.pdf', version:'HTTP/1.1',
+        headers:{ 'Host':'example.com','User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64)','Accept':'*/*','Connection':'keep-alive' } },
+      response:{ status:200, statusText:'OK',
+        headers:{ 'Content-Type':'application/pdf','Content-Length':'44312','Content-Disposition':'attachment; filename="report-2024.pdf"','Server':'nginx/1.18.0','Cache-Control':'no-cache' },
+        body:'%PDF-1.4 binary payload...' },
+      files:[
+        { name:'report-2024.pdf', mime:'application/pdf', size:44312, entropy:7.82, md5:'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6', sha256:'abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890', icon:'📄', color:'#e74c3c' }
+      ],
+      dns:[{ query:'example.com', type:'A', answer:'93.184.216.34', ts: now - 130000 }],
+      tls:null,
+      alerts:[
+        { sev:'med', title:'Large file transfer', desc:'44 KB PDF extracted over unencrypted HTTP', icon:'⚠️' }
+      ],
+      timeline:[
+        { type:'dns', time:now-130000, label:'DNS query', detail:'example.com → 93.184.216.34' },
+        { type:'req', time:now-120000, label:'GET /download/report-2024.pdf', detail:'HTTP/1.1 • 2048 bytes' },
+        { type:'res', time:now-119658, label:'200 OK — PDF transfer', detail:'44312 bytes • application/pdf' },
+        { type:'file', time:now-119658, label:'File extracted', detail:'report-2024.pdf (entropy 7.82)' }
+      ]
+    },
+    {
+      id:'sess_002', proto:'HTTPS', ts: now - 95000,
+      src:'10.0.1.45:53840', dst:'140.82.121.4:443',
+      srcHost:'workstation-7', dstHost:'github.com',
+      bytes:{ req:1024, res:8192 }, duration:891,
+      state:'ESTABLISHED', flags:['tls'],
+      request:{ method:'POST', uri:'/api/v1/repos/user/repo/git/commits', version:'HTTP/1.1',
+        headers:{ 'Host':'api.github.com','Authorization':'Bearer ghp_xxxxxxxxxxxxxxxxxxxx','Content-Type':'application/json','User-Agent':'git/2.39.0' },
+        body:'{"message":"Update config","content":"base64=="}' },
+      response:{ status:201, statusText:'Created',
+        headers:{ 'Content-Type':'application/json','X-RateLimit-Remaining':'4998','X-GitHub-Request-Id':'A1B2C3D4' },
+        body:'{"sha":"abc123def456","url":"https://api.github.com/..."}' },
+      files:[], dns:[], tls:{ version:'TLSv1.3', cipher:'TLS_AES_256_GCM_SHA384', sni:'api.github.com', cert:'github.com' },
+      alerts:[
+        { sev:'high', title:'API token detected', desc:'GitHub Personal Access Token (ghp_*) in Authorization header', icon:'🔑' },
+        { sev:'low', title:'TLS 1.3', desc:'Strong cipher suite in use', icon:'🔒' }
+      ],
+      timeline:[
+        { type:'tls', time:now-95000, label:'TLS 1.3 handshake', detail:'api.github.com • AES_256_GCM' },
+        { type:'req', time:now-94800, label:'POST /api/v1/repos/.../commits', detail:'Authorization: Bearer ghp_***' },
+        { type:'res', time:now-93909, label:'201 Created', detail:'Commit object returned' }
+      ]
+    },
+    {
+      id:'sess_003', proto:'DNS', ts: now - 88000,
+      src:'10.0.1.45:63291', dst:'8.8.8.8:53',
+      srcHost:'workstation-7', dstHost:'dns.google',
+      bytes:{ req:68, res:84 }, duration:12,
+      state:'CLOSED', flags:['dns'],
+      request:{ method:'QUERY', uri:'suspicious-domain-xyz123.ru', version:'DNS',
+        headers:{ 'Type':'A','Class':'IN','ID':'0x4A2F' }, body:'' },
+      response:{ status:0, statusText:'NOERROR',
+        headers:{ 'TTL':'300','Answer':'185.220.101.42' }, body:'' },
+      files:[],
+      dns:[
+        { query:'suspicious-domain-xyz123.ru', type:'A', answer:'185.220.101.42', ts:now-88000, ttl:300 },
+        { query:'mail.suspicious-domain-xyz123.ru', type:'MX', answer:'mail.suspicious-domain-xyz123.ru', ts:now-87500, ttl:300 }
+      ],
+      tls:null,
+      alerts:[
+        { sev:'high', title:'Suspicious TLD', desc:'Query to .ru domain with high-entropy subdomain — possible DGA or C2', icon:'🚨' },
+        { sev:'high', title:'Tor exit node IP', desc:'Resolved IP 185.220.101.42 is a known Tor exit node', icon:'🕵️' }
+      ],
+      timeline:[
+        { type:'dns', time:now-88000, label:'DNS A query', detail:'suspicious-domain-xyz123.ru' },
+        { type:'dns', time:now-87500, label:'DNS MX query', detail:'mail.suspicious-domain-xyz123.ru' },
+        { type:'res', time:now-87988, label:'Resolved → 185.220.101.42', detail:'TTL 300s • Tor exit node' }
+      ]
+    },
+    {
+      id:'sess_004', proto:'FTP', ts: now - 72000,
+      src:'10.0.1.45:21001', dst:'203.0.113.55:21',
+      srcHost:'workstation-7', dstHost:'ftp.corp-server.internal',
+      bytes:{ req:512, res:1048576 }, duration:4200,
+      state:'CLOSED', flags:['file','creds'],
+      request:{ method:'RETR', uri:'/exports/customer_data_2024.csv', version:'FTP',
+        headers:{ 'USER':'jsmith','PASS':'Summer2024!','TYPE':'I','PASV':'' }, body:'' },
+      response:{ status:226, statusText:'Transfer complete',
+        headers:{ 'Size':'1048576','Transfer-time':'4.2s' }, body:'' },
+      files:[
+        { name:'customer_data_2024.csv', mime:'text/csv', size:1048576, entropy:5.12, md5:'f1e2d3c4b5a6f7e8d9c0b1a2f3e4d5c6', sha256:'fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210', icon:'📊', color:'#2ecc71' }
+      ],
+      dns:[],
+      tls:null,
+      alerts:[
+        { sev:'high', title:'Cleartext credentials', desc:'FTP USER/PASS transmitted in plaintext: jsmith / Summer2024!', icon:'🔓' },
+        { sev:'high', title:'Large CSV exfiltration', desc:'1 MB customer data file retrieved over unencrypted FTP', icon:'🚨' }
+      ],
+      timeline:[
+        { type:'req', time:now-72000, label:'FTP USER jsmith', detail:'Cleartext authentication' },
+        { type:'req', time:now-71990, label:'FTP PASS Summer2024!', detail:'⚠️ Cleartext password' },
+        { type:'req', time:now-71980, label:'RETR customer_data_2024.csv', detail:'Passive mode transfer' },
+        { type:'file', time:now-67800, label:'1 MB CSV extracted', detail:'customer_data_2024.csv • entropy 5.12' },
+        { type:'res', time:now-67800, label:'226 Transfer complete', detail:'4.2s total' }
+      ]
+    },
+    {
+      id:'sess_005', proto:'SMTP', ts: now - 45000,
+      src:'10.0.1.22:45901', dst:'74.125.224.109:25',
+      srcHost:'mail-relay', dstHost:'smtp.gmail.com',
+      bytes:{ req:8192, res:512 }, duration:1100,
+      state:'CLOSED', flags:['file','creds'],
+      request:{ method:'EHLO', uri:'mail-relay.corp.local', version:'SMTP',
+        headers:{ 'EHLO':'mail-relay.corp.local','AUTH':'PLAIN AGpzbWl0aABTdW1tZXIyMDI0IQ==','MAIL FROM':'<reports@corp.local>','RCPT TO':'<external@gmail.com>','Subject':'Q4 Financial Report - CONFIDENTIAL' },
+        body:'From: reports@corp.local\r\nTo: external@gmail.com\r\nSubject: Q4 Financial Report - CONFIDENTIAL\r\n\r\nPlease find attached the Q4 financial report.\r\n' },
+      response:{ status:250, statusText:'OK: accepted', headers:{}, body:'' },
+      files:[
+        { name:'q4_report.xlsx', mime:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', size:286720, entropy:7.6, md5:'c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8', sha256:'1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', icon:'📊', color:'#2ecc71' }
+      ],
+      dns:[],
+      tls:null,
+      alerts:[
+        { sev:'high', title:'Base64 AUTH credentials', desc:'SMTP AUTH PLAIN: jsmith / Summer2024! (decoded)', icon:'🔓' },
+        { sev:'high', title:'Sensitive document exfiltration', desc:'Confidential financial report emailed to external address', icon:'🚨' },
+        { sev:'med', title:'Internal to external data flow', desc:'corp.local → gmail.com over plaintext SMTP', icon:'⚠️' }
+      ],
+      timeline:[
+        { type:'req', time:now-45000, label:'SMTP EHLO', detail:'mail-relay.corp.local' },
+        { type:'req', time:now-44900, label:'AUTH PLAIN (base64)', detail:'Decoded: jsmith / Summer2024!' },
+        { type:'req', time:now-44800, label:'MAIL FROM → RCPT TO', detail:'reports@corp.local → external@gmail.com' },
+        { type:'file', time:now-44700, label:'Attachment: q4_report.xlsx', detail:'280 KB • spreadsheet • entropy 7.6' },
+        { type:'res', time:now-43900, label:'250 OK accepted', detail:'Message delivered' }
+      ]
+    }
+  ];
+}
+
+function generateHex(session) {
+  const lines = [];
+  const raw = `${session.request.method} ${session.request.uri} ${session.request.version}\r\n` +
+    Object.entries(session.request.headers).map(([k,v])=>`${k}: ${v}`).join('\r\n') + '\r\n\r\n';
+  for(let i=0;i<Math.min(raw.length,128);i+=16){
+    const chunk = raw.slice(i,i+16);
+    const hex = chunk.split('').map(c=>c.charCodeAt(0).toString(16).padStart(2,'0')).join(' ');
+    const ascii = chunk.split('').map(c=>{const n=c.charCodeAt(0);return n>=32&&n<127?c:'.'}).join('');
+    lines.push({off:i.toString(16).padStart(4,'0'),hex,ascii});
+  }
+  return lines;
+}
+
+// ===================== MAIN ACTIONS =====================
+function loadDemoData() {
+  sessions = generateDemoData();
+  renderSessions(sessions);
+  document.getElementById('run-btn').disabled = false;
+  document.getElementById('export-btn').disabled = false;
+  updateToolbarStats();
+  showProgress('Loading demo capture...', () => {
+    indexToDatabase(sessions);
+  });
+}
+
+function handleFileUpload(files) {
+  if(!files.length) return;
+  // Simulate parsing
+  sessions = generateDemoData();
+  renderSessions(sessions);
+  document.getElementById('run-btn').disabled = false;
+  document.getElementById('export-btn').disabled = false;
+  showProgress(`Parsing ${files[0].name}...`, () => {
+    indexToDatabase(sessions);
+  });
+}
+
+function runAnalysis() {
+  if(!sessions.length) return;
+  showProgress('Reassembling TCP streams...', () => {
+    updateToolbarStats();
+  });
+}
+
+function showProgress(title, done) {
+  const wrap = document.getElementById('progress-wrap');
+  const bar = document.getElementById('progress-bar');
+  const detail = document.getElementById('progress-detail');
+  const titleEl = document.getElementById('progress-title-text');
+  const steps = [
+    'Parsing packet headers...',
+    'Reassembling TCP streams...',
+    'Extracting HTTP sessions...',
+    'Mining metadata & artifacts...',
+    'Detecting credentials...',
+    'Extracting embedded files...',
+    'Calculating file entropy...',
+    'Running signature matching...',
+    'Indexing to database...',
+    'Complete.'
+  ];
+  wrap.classList.remove('hidden');
+  titleEl.textContent = title;
+  let i=0;
+  const interval = setInterval(()=>{
+    const pct = Math.round((i/steps.length)*100);
+    bar.style.width = pct+'%';
+    detail.textContent = steps[i]||'';
+    i++;
+    if(i>steps.length){
+      clearInterval(interval);
+      bar.style.width='100%';
+      detail.textContent='Done.';
+      setTimeout(()=>{ wrap.classList.add('hidden'); bar.style.width='0%'; done&&done(); },600);
+    }
+  },120);
+}
+
+function indexToDatabase(sess) {
+  db.sessions = sess.map(s=>({
+    id:s.id, proto:s.proto, ts:s.ts, src:s.src, dst:s.dst,
+    srcHost:s.srcHost, dstHost:s.dstHost, bytes:s.bytes.req+s.bytes.res,
+    duration:s.duration, state:s.state, alerts:s.alerts.length
+  }));
+  db.files = sess.flatMap(s=>s.files.map(f=>({...f,sessionId:s.id})));
+  db.dns = sess.flatMap(s=>s.dns.map(d=>({...d,sessionId:s.id})));
+  db.alerts = sess.flatMap(s=>s.alerts.map(a=>({...a,sessionId:s.id})));
+  db.hosts = new Set(sess.flatMap(s=>[s.srcHost,s.dstHost]));
+  updateDbView();
+  updateToolbarStats();
+}
+
+function updateToolbarStats() {
+  document.getElementById('stat-sessions').textContent = sessions.length;
+  document.getElementById('stat-files').textContent = sessions.reduce((a,s)=>a+s.files.length,0);
+  const alerts = sessions.reduce((a,s)=>a+s.alerts.length,0);
+  document.getElementById('stat-alerts').textContent = alerts;
+  document.getElementById('db-stat-sessions').textContent = db.sessions.length;
+  document.getElementById('db-stat-files').textContent = db.files.length;
+  document.getElementById('db-stat-hosts').textContent = db.hosts.size;
+  const highAlerts = db.alerts.filter(a=>a.sev==='high').length;
+  document.getElementById('db-stat-alerts').textContent = db.alerts.length;
+  document.getElementById('db-stat-high').textContent = highAlerts ? `${highAlerts} HIGH` : '';
+}
+
+function clearAll() {
+  sessions=[];db={sessions:[],files:[],dns:[],alerts:[],credentials:[],hosts:new Set()};
+  selectedSession=null;
+  document.getElementById('sessions-list').innerHTML='<div style="padding:20px 10px;text-align:center;color:var(--text3);font-size:12px;">Load a capture file to see sessions</div>';
+  document.getElementById('empty-detail').classList.remove('hidden');
+  document.getElementById('session-detail').classList.add('hidden');
+  document.getElementById('rp-body').innerHTML='<div style="color:var(--text3);font-size:12px;text-align:center;padding:20px 0;">Select a session</div>';
+  document.getElementById('run-btn').disabled=true;
+  document.getElementById('export-btn').disabled=true;
+  updateToolbarStats();
+}
+
+function exportData() {
+  if(!sessions.length)return;
+  const blob = new Blob([JSON.stringify({exportedAt:new Date().toISOString(),sessions,db:{sessions:db.sessions,files:db.files,dns:db.dns,alerts:db.alerts}},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='netforge-export.json';a.click();
+}
+
+// ===================== SESSIONS LIST =====================
+function renderSessions(list) {
+  const el = document.getElementById('sessions-list');
+  const filt = list.filter(s=> activeProto==='ALL' || s.proto===activeProto);
+  const query = document.getElementById('filter-input').value.toLowerCase();
+  const filtered = filt.filter(s=>
+    !query ||
+    s.srcHost.toLowerCase().includes(query)||
+    s.dstHost.toLowerCase().includes(query)||
+    s.src.includes(query)||s.dst.includes(query)||
+    s.proto.toLowerCase().includes(query)
+  );
+  if(!filtered.length){el.innerHTML='<div style="padding:20px 10px;text-align:center;color:var(--text3);font-size:12px;">No sessions match filter</div>';return;}
+  el.innerHTML = filtered.map(s=>`
+    <div class="session-item${selectedSession&&selectedSession.id===s.id?' selected':''}" onclick="selectSession('${s.id}')">
+      <div class="si-header">
+        <span class="si-proto proto-${s.proto.toLowerCase()}">${s.proto}</span>
+        <span class="si-time">${formatTime(s.ts)}</span>
+      </div>
+      <div class="si-hosts">${s.srcHost} → ${s.dstHost}</div>
+      <div class="si-meta">
+        <span class="si-bytes">${formatBytes(s.bytes.req+s.bytes.res)}</span>
+        <div class="si-flags">
+          ${s.flags.includes('file')?'<div class="si-flag flag-file" title="Files extracted"></div>':''}
+          ${s.flags.includes('creds')?'<div class="si-flag flag-creds" title="Credentials detected"></div>':''}
+          ${s.flags.includes('dns')?'<div class="si-flag flag-dns" title="DNS activity"></div>':''}
+          ${s.flags.includes('tls')?'<div class="si-flag flag-tls" title="TLS encrypted"></div>':''}
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function selectSession(id) {
+  selectedSession = sessions.find(s=>s.id===id);
+  if(!selectedSession)return;
+  renderSessions(sessions);
+  document.getElementById('empty-detail').classList.add('hidden');
+  document.getElementById('session-detail').classList.remove('hidden');
+  renderOverview();
+  renderPayload();
+  renderFiles();
+  renderHex();
+  renderTimeline();
+  renderAlerts();
+  switchDetailTab(activeDetailTab);
+}
+
+function toggleProto(el, proto) {
+  activeProto = proto;
+  document.querySelectorAll('.proto-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  renderSessions(sessions);
+}
+
+function applyFilter() { renderSessions(sessions); }
+
+// ===================== DETAIL TABS =====================
+function switchDetailTab(tab) {
+  activeDetailTab = tab;
+  document.querySelectorAll('.detail-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.detail-content').forEach(c=>c.classList.add('hidden'));
+  const tabEl = document.querySelector(`.detail-tab[onclick*="${tab}"]`);
+  if(tabEl)tabEl.classList.add('active');
+  document.getElementById(`detail-${tab}`).classList.remove('hidden');
+}
+
+// ===================== RENDERERS =====================
+function renderOverview() {
+  const s = selectedSession;
+  const highAlerts = s.alerts.filter(a=>a.sev==='high').length;
+  document.getElementById('detail-overview').innerHTML = `
+    <div class="session-hdr-card">
+      <div class="shc-top">
+        <div class="shc-title">${s.proto} Session — ${s.id}</div>
+        <div class="shc-badges">
+          <span class="badge badge-blue">${s.proto}</span>
+          <span class="badge badge-${s.state==='CLOSED'?'green':'amber'}">${s.state}</span>
+          ${highAlerts>0?`<span class="badge badge-red">⚠ ${highAlerts} ALERT${highAlerts>1?'S':''}</span>`:''}
+        </div>
+      </div>
+      <div class="shc-grid">
+        <div class="shc-field"><div class="shc-label">Source</div><div class="shc-value">${s.src}<br><span style="color:var(--text3);font-size:10px">${s.srcHost}</span></div></div>
+        <div class="shc-field"><div class="shc-label">Destination</div><div class="shc-value">${s.dst}<br><span style="color:var(--text3);font-size:10px">${s.dstHost}</span></div></div>
+        <div class="shc-field"><div class="shc-label">Timestamp</div><div class="shc-value">${new Date(s.ts).toLocaleString()}</div></div>
+        <div class="shc-field"><div class="shc-label">TX / RX</div><div class="shc-value accent">${formatBytes(s.bytes.req)} / ${formatBytes(s.bytes.res)}</div></div>
+        <div class="shc-field"><div class="shc-label">Duration</div><div class="shc-value">${s.duration}ms</div></div>
+        <div class="shc-field"><div class="shc-label">Artifacts</div><div class="shc-value">${s.files.length} file${s.files.length!==1?'s':''}, ${s.dns.length} DNS</div></div>
+      </div>
+    </div>
+
+    ${s.tls?`
+    <div class="meta-section">
+      <div class="meta-section-title">TLS / Encryption</div>
+      <div class="meta-grid">
+        <div class="meta-key">Version</div><div class="meta-val good">${s.tls.version}</div>
+        <div class="meta-key">Cipher suite</div><div class="meta-val">${s.tls.cipher}</div>
+        <div class="meta-key">SNI</div><div class="meta-val">${s.tls.sni}</div>
+        <div class="meta-key">Certificate</div><div class="meta-val">${s.tls.cert}</div>
+      </div>
+    </div>`:''}
+
+    <div class="meta-section">
+      <div class="meta-section-title">Request metadata</div>
+      <div class="meta-grid">
+        <div class="meta-key">Method</div><div class="meta-val highlight">${s.request.method}</div>
+        <div class="meta-key">URI</div><div class="meta-val">${s.request.uri}</div>
+        <div class="meta-key">Version</div><div class="meta-val">${s.request.version}</div>
+        ${Object.entries(s.request.headers).map(([k,v])=>`
+          <div class="meta-key">${k}</div><div class="meta-val${k==='Authorization'||k==='PASS'?' danger':''}">${v}</div>
+        `).join('')}
+      </div>
+    </div>
+
+    <div class="meta-section">
+      <div class="meta-section-title">Response metadata</div>
+      <div class="meta-grid">
+        <div class="meta-key">Status</div><div class="meta-val ${s.response.status<300?'good':s.response.status<400?'highlight':'danger'}">${s.response.status} ${s.response.statusText}</div>
+        ${Object.entries(s.response.headers).map(([k,v])=>`
+          <div class="meta-key">${k}</div><div class="meta-val">${v}</div>
+        `).join('')}
+      </div>
+    </div>
+
+    ${s.dns.length?`
+    <div class="meta-section">
+      <div class="meta-section-title">DNS queries</div>
+      <div class="meta-grid">
+        ${s.dns.map(d=>`
+          <div class="meta-key">${d.query}</div>
+          <div class="meta-val">${d.type} → ${d.answer}${d.ttl?' (TTL '+d.ttl+'s)':''}</div>
+        `).join('')}
+      </div>
+    </div>`:''}
+  `;
+}
+
+function renderPayload() {
+  const s = selectedSession;
+  document.getElementById('detail-payload').innerHTML = `
+    <div class="payload-row">
+      <div class="payload-viewer">
+        <div class="pv-header">
+          <span class="pv-title">Request payload</span>
+          <span class="pv-dir req">→ CLIENT</span>
+        </div>
+        <div class="pv-body">${formatPayload(s.request)}</div>
+      </div>
+    </div>
+    <div class="payload-row">
+      <div class="payload-viewer">
+        <div class="pv-header">
+          <span class="pv-title">Response payload</span>
+          <span class="pv-dir res">← SERVER</span>
+        </div>
+        <div class="pv-body">${formatPayload(s.response)}</div>
+      </div>
+    </div>
+    ${s.request.body?`
+    <div class="payload-row">
+      <div class="payload-viewer">
+        <div class="pv-header"><span class="pv-title">Request body</span></div>
+        <div class="pv-body">${escHtml(s.request.body)}</div>
+      </div>
+    </div>`:''}
+  `;
+}
+
+function formatPayload(msg) {
+  const isReq = 'method' in msg;
+  const statusClass = msg.status && msg.status < 300 ? 'status-ok' : msg.status >= 400 ? 'status-err' : '';
+  const lines = isReq
+    ? [`<span class="method">${msg.method}</span> ${escHtml(msg.uri)} ${msg.version}`]
+    : [`<span class="${statusClass}">${msg.status} ${msg.statusText}</span>`];
+  Object.entries(msg.headers).forEach(([k,v])=>{
+    const isAuth = k==='Authorization'||k==='PASS';
+    lines.push(`<span class="key">${escHtml(k)}</span>: <span class="val${isAuth?' danger':''}">${escHtml(v)}</span>`);
+  });
+  return lines.join('\n');
+}
+
+function renderFiles() {
+  const s = selectedSession;
+  if(!s.files.length){
+    document.getElementById('detail-files').innerHTML='<div class="empty-state" style="padding:40px 0;"><div class="empty-icon">📂</div><div class="empty-title">No files extracted</div><div class="empty-sub">No file transfers detected in this session</div></div>';
+    return;
+  }
+  document.getElementById('detail-files').innerHTML = `
+    <table class="files-table">
+      <thead>
+        <tr><th>File</th><th>MIME type</th><th>Size</th><th>Entropy</th><th>MD5</th><th></th></tr>
+      </thead>
+      <tbody>
+        ${s.files.map(f=>`
+          <tr>
+            <td><div class="file-row">
+              <div class="file-icon" style="background:${f.color}22;color:${f.color}">${f.icon}</div>
+              <div><div class="file-name">${escHtml(f.name)}</div></div>
+            </div></td>
+            <td><span class="file-type">${escHtml(f.mime)}</span></td>
+            <td class="file-size">${formatBytes(f.size)}</td>
+            <td>
+              <div class="entropy-bar"><div class="entropy-fill" style="width:${(f.entropy/8)*100}%;background:${f.entropy>7?'var(--red)':f.entropy>5?'var(--amber)':'var(--green)'};"></div></div>
+              <span style="font-size:10px;color:${f.entropy>7?'var(--red)':f.entropy>5?'var(--amber)':'var(--green)'}">${f.entropy.toFixed(2)}</span>
+            </td>
+            <td class="file-hash">${f.md5.slice(0,12)}...</td>
+            <td><button class="dl-btn" onclick="extractFile('${escHtml(f.name)}')">Extract</button></td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+    <div style="margin-top:14px;padding:10px;background:var(--bg3);border-radius:7px;border:1px solid var(--border);">
+      ${s.files.map(f=>`
+        <div class="meta-grid" style="margin-bottom:8px;">
+          <div class="meta-key">SHA-256</div><div class="meta-val" style="font-size:10px;">${f.sha256}</div>
+          <div class="meta-key">Entropy note</div><div class="meta-val ${f.entropy>7?'danger':''}">${f.entropy>7?'High entropy — possible encryption/compression':f.entropy>5?'Moderate entropy':'Low entropy — plaintext data'}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderHex() {
+  const s = selectedSession;
+  const hexLines = generateHex(s);
+  document.getElementById('detail-hex').innerHTML = `
+    <div style="margin-bottom:8px;font-size:11px;color:var(--text3);">First 128 bytes of reassembled stream</div>
+    <div class="payload-viewer">
+      <div class="pv-header">
+        <span class="pv-title">Raw stream — ${s.src} → ${s.dst}</span>
+        <span class="pv-dir req">HEX DUMP</span>
+      </div>
+      <div class="pv-body">
+        <div class="hex-view">
+          ${hexLines.map(l=>`
+            <span class="hex-offset">${l.off}</span>
+            <span class="hex-bytes">${l.hex.padEnd(47)}</span>
+            <span class="hex-ascii">${l.ascii.split('').map(c=>c!='.'?`<span class="h-printable">${escHtml(c)}</span>`:escHtml(c)).join('')}</span>
+          `).join('\n')}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderTimeline() {
+  const s = selectedSession;
+  document.getElementById('rp-body').innerHTML = s.timeline.map(t=>`
+    <div class="tl-item tl-${t.type}">
+      <div class="tl-time">${new Date(t.time).toLocaleTimeString('en',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'})} +${t.time-s.ts}ms</div>
+      <div class="tl-label">${escHtml(t.label)}</div>
+      <div class="tl-detail">${escHtml(t.detail)}</div>
+    </div>
+  `).join('');
+}
+
+function renderAlerts() {
+  const s = selectedSession;
+  document.getElementById('rp-body').dataset.alertsHtml = s.alerts.map(a=>`
+    <div class="alert-item sev-${a.sev}">
+      <div class="alert-icon">${a.icon}</div>
+      <div>
+        <div class="alert-title">${escHtml(a.title)}</div>
+        <div class="alert-desc">${escHtml(a.desc)}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+let rpShowingAlerts = false;
+function toggleRpView() {
+  rpShowingAlerts = !rpShowingAlerts;
+  const btn = document.getElementById('rp-toggle');
+  const title = document.getElementById('rp-title');
+  if(rpShowingAlerts) {
+    btn.textContent='Timeline';
+    title.textContent='Alerts';
+    document.getElementById('rp-body').innerHTML = document.getElementById('rp-body').dataset.alertsHtml||'';
+  } else {
+    btn.textContent='Alerts';
+    title.textContent='Timeline';
+    if(selectedSession)renderTimeline();
+  }
+}
+
+// ===================== DATABASE VIEW =====================
+function updateDbView() {
+  const tbl = (rows, cols) => {
+    if(!rows.length) return '<div style="padding:20px;text-align:center;color:var(--text3);font-size:12px;">No records</div>';
+    return `<table class="files-table" style="width:100%">
+      <thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead>
+      <tbody>${rows.slice(0,20).map(r=>`<tr>${cols.map(c=>`<td class="db-col val">${escHtml(String(r[c]??''))}</td>`).join('')}</tr>`).join('')}</tbody>
+    </table>`;
+  };
+  document.getElementById('db-sessions-table').innerHTML = tbl(db.sessions, ['id','proto','srcHost','dstHost','bytes','state','alerts']);
+  document.getElementById('db-files-table').innerHTML = tbl(db.files, ['name','mime','size','entropy','sessionId']);
+  document.getElementById('db-dns-table').innerHTML = tbl(db.dns, ['query','type','answer','ttl','sessionId']);
+  document.getElementById('db-alerts-table').innerHTML = tbl(db.alerts, ['sev','title','sessionId']);
+}
+
+// ===================== SEARCH =====================
+const quickTags = ['credentials', 'PDF', 'exfiltration', 'DNS', 'FTP', '192.168', 'Authorization'];
+document.getElementById('search-tags').innerHTML = quickTags.map(t=>
+  `<button class="proto-chip" onclick="document.getElementById('search-query').value='${t}';doSearch()" style="font-size:11px;">${t}</button>`
+).join('');
+
+function doSearch() {
+  const q = document.getElementById('search-query').value.toLowerCase().trim();
+  if(!q){ document.getElementById('search-results').innerHTML=''; return; }
+  if(!sessions.length){ document.getElementById('search-results').innerHTML='<div style="color:var(--text3);font-size:12px;">No data loaded — go to Capture tab and load a file</div>'; return; }
+
+  const results = [];
+  sessions.forEach(s=>{
+    const fields = [
+      s.src,s.dst,s.srcHost,s.dstHost,s.proto,
+      JSON.stringify(s.request.headers),
+      s.request.body||'',
+      JSON.stringify(s.response.headers),
+      s.response.body||'',
+      ...s.files.map(f=>f.name+' '+f.mime+' '+f.md5),
+      ...s.dns.map(d=>d.query+' '+d.answer),
+      ...s.alerts.map(a=>a.title+' '+a.desc)
+    ];
+    const matchingFields = fields.filter(f=>f.toLowerCase().includes(q));
+    if(matchingFields.length) {
+      results.push({session:s, matches:matchingFields, score:matchingFields.length});
+    }
+  });
+
+  results.sort((a,b)=>b.score-a.score);
+  document.getElementById('search-results').innerHTML = results.length ? results.map(r=>`
+    <div class="result-card" onclick="switchTab('capture');setTimeout(()=>selectSession('${r.session.id}'),50)">
+      <div class="rc-header">
+        <div class="shc-badges" style="gap:4px">
+          <span class="badge badge-blue">${r.session.proto}</span>
+          <span style="font-size:11px;color:var(--text)">${r.session.srcHost} → ${r.session.dstHost}</span>
+        </div>
+        <span class="rc-id">${r.session.id} • ${r.score} match${r.score>1?'es':''}</span>
+      </div>
+      <div class="rc-body">${r.matches.slice(0,3).map(m=>highlightMatch(m,q)).join('<br>')}</div>
+    </div>
+  `).join('') : '<div style="color:var(--text3);font-size:12px;padding:10px 0;">No results found</div>';
+}
+
+function highlightMatch(text, q) {
+  const idx = text.toLowerCase().indexOf(q);
+  if(idx<0)return escHtml(text.slice(0,80))+'...';
+  const start = Math.max(0,idx-30);
+  const end = Math.min(text.length, idx+q.length+40);
+  return (start>0?'...':'')+escHtml(text.slice(start,idx))+`<span class="match">${escHtml(text.slice(idx,idx+q.length))}</span>`+escHtml(text.slice(idx+q.length,end))+(end<text.length?'...':'');
+}
+
+// ===================== TAB SWITCHING =====================
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',b.textContent.toLowerCase().includes(name)));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id===`tab-${name}`));
+}
+
+// ===================== UTILS =====================
+function formatBytes(n) {
+  if(n<1024)return n+' B';
+  if(n<1048576)return (n/1024).toFixed(1)+' KB';
+  return (n/1048576).toFixed(1)+' MB';
+}
+function formatTime(ts) {
+  const d=new Date(ts);
+  return d.toLocaleTimeString('en',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function extractFile(name) {
+  alert(`In a real deployment, "${name}" would be extracted and saved from the reassembled stream data.`);
+}
+
+// Drag/drop
+const dz = document.getElementById('drop-zone');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag-over');});
+dz.addEventListener('dragleave',()=>dz.classList.remove('drag-over'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag-over');handleFileUpload(e.dataTransfer.files);});
+</script>
+</body>
+</html>
