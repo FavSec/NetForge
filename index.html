@@ -2196,14 +2196,22 @@ function initNetMouse() {
     return netNodes.find(n => Math.sqrt((n.x-mx)**2+(n.y-my)**2) < n.radius + 8);
   };
 
+  let netMouseDownX = 0, netMouseDownY = 0, netDidDrag = false;
+
   canvas.addEventListener('mousedown', e => {
     const n = getNode(e);
+    netMouseDownX = e.clientX;
+    netMouseDownY = e.clientY;
+    netDidDrag = false;
     if(n) { netDragging = n; n.vx = 0; n.vy = 0; }
   });
 
   canvas.addEventListener('mousemove', e => {
     const rect = canvas.getBoundingClientRect();
     if(netDragging) {
+      const dx = e.clientX - netMouseDownX;
+      const dy = e.clientY - netMouseDownY;
+      if(Math.sqrt(dx*dx + dy*dy) > 4) netDidDrag = true;
       netDragging.x = e.clientX - rect.left;
       netDragging.y = e.clientY - rect.top;
     }
@@ -2243,6 +2251,7 @@ function initNetMouse() {
   });
 
   canvas.addEventListener('click', e => {
+    if(netDidDrag) { netDidDrag = false; return; }
     const n = getNode(e);
     if(n && n.sessions?.length) {
       switchTab('capture');
