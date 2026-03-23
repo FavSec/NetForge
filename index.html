@@ -1860,6 +1860,11 @@ function toggleNetProto(el, proto) {
 function netPause() {
   netPaused = !netPaused;
   document.getElementById('net-pause-btn').textContent = netPaused ? '▶ Resume' : '⏸ Pause';
+  // If we were paused and resuming, make sure loop is still running
+  if(!netPaused) {
+    const canvas = document.getElementById('net-canvas');
+    if(canvas && !netAnimFrame) startNetLoop();
+  }
 }
 
 function netReset() {
@@ -1985,7 +1990,7 @@ function startNetLoop() {
       updatePhysics(canvas.width, canvas.height);
       updatePackets();
     }
-    drawNet(canvas);
+    drawNet(canvas); // always redraw even when paused
   };
   loop();
 }
