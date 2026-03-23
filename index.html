@@ -58,6 +58,115 @@ html,body{height:100%;overflow:hidden;}
 body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:20px;line-height:1.6;}
 ::-webkit-scrollbar{width:3px;}
 
+.net-wrap{height:100%;display:flex;flex-direction:column;}
+.net-toolbar{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0;}
+.net-title-bar{font-size:13px;font-weight:500;color:var(--text);}
+.net-chip{font-size:11px;padding:3px 10px;border:1px solid var(--border);color:var(--text3);cursor:pointer;background:transparent;transition:all .1s;font-family:var(--mono);user-select:none;}
+.net-chip:hover:not(.net-chip-on){border-color:var(--border2);color:var(--text2);}
+.net-chip-on{border-color:var(--text);color:var(--bg);background:var(--text);}
+.net-canvas-wrap{flex:1;position:relative;overflow:hidden;background:var(--bg);}
+#net-canvas{display:block;width:100%;height:100%;}
+.net-legend{position:absolute;bottom:12px;left:16px;display:flex;flex-direction:column;gap:5px;}
+.net-legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text3);font-family:var(--mono);}
+.net-legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.net-info{position:absolute;top:12px;right:16px;background:var(--bg2);border:1px solid var(--border);padding:10px 14px;font-size:12px;min-width:200px;max-width:260px;display:none;}
+.net-info-title{font-weight:500;color:var(--text);margin-bottom:6px;font-size:13px;}
+.net-info-row{display:flex;justify-content:space-between;gap:12px;color:var(--text2);margin-bottom:3px;font-family:var(--mono);font-size:11px;}
+.net-info-row span{color:var(--text);}
+.net-stats{position:absolute;top:12px;left:16px;display:flex;flex-direction:column;gap:4px;}
+.net-stat-pill{background:var(--bg2);border:1px solid var(--border);padding:4px 10px;font-size:11px;color:var(--text3);font-family:var(--mono);}
+.net-stat-pill b{color:var(--text);}
+
+
+.tl-wrap{padding:24px;max-width:1200px;margin:0 auto;}
+.tl-page-title{font-size:20px;font-weight:300;letter-spacing:-0.04em;color:var(--text);margin-bottom:4px;}
+.tl-page-sub{font-size:13px;color:var(--text3);margin-bottom:20px;}
+.tl-controls{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+.tl-control-label{font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text3);}
+.tl-chip{font-size:11px;padding:3px 10px;border:1px solid var(--border);color:var(--text3);cursor:pointer;background:transparent;transition:all .1s;font-family:var(--mono);user-select:none;}
+.tl-chip:hover:not(.tl-chip-on){border-color:var(--border2);color:var(--text2);}
+.tl-chip-on{border-color:var(--text);color:var(--bg);background:var(--text);}
+.tl-chart-wrap{background:var(--bg2);border:1px solid var(--border);margin-bottom:16px;overflow:hidden;}
+.tl-chart-title{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);padding:10px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.tl-chart-scroll{overflow-x:auto;overflow-y:hidden;}
+.tl-chart-scroll::-webkit-scrollbar{height:4px;}
+.tl-chart-scroll::-webkit-scrollbar-thumb{background:var(--border2);}
+#tl-canvas-wrap{position:relative;}
+#tl-canvas{display:block;cursor:crosshair;}
+.tl-tooltip{position:absolute;background:var(--bg3);border:1px solid var(--border2);padding:8px 12px;font-size:12px;pointer-events:none;z-index:100;min-width:180px;line-height:1.6;}
+.tl-tooltip-title{font-weight:500;color:var(--text);margin-bottom:4px;font-size:13px;}
+.tl-tooltip-row{color:var(--text2);font-family:var(--mono);font-size:11px;}
+.tl-tooltip-row span{color:var(--text);}
+.tl-legend{display:flex;gap:16px;padding:10px 16px;border-top:1px solid var(--border);flex-wrap:wrap;}
+.tl-legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text3);cursor:pointer;user-select:none;}
+.tl-legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.tl-sessions-wrap{background:var(--bg2);border:1px solid var(--border);}
+.tl-sessions-title{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);padding:10px 16px;border-bottom:1px solid var(--border);}
+.tl-session-row{display:grid;grid-template-columns:140px 80px 1fr 100px 80px;gap:8px;align-items:center;padding:9px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;font-size:12px;}
+.tl-session-row:last-child{border-bottom:none;}
+.tl-session-row:hover{background:var(--bg3);}
+.tl-session-bar-wrap{height:6px;background:var(--bg4);border-radius:3px;overflow:hidden;position:relative;}
+.tl-session-bar{height:100%;border-radius:3px;position:absolute;left:0;}
+.tl-empty{padding:40px;text-align:center;color:var(--text3);font-size:13px;}
+
+
+.hv-blurred{
+  filter:blur(5px);
+  user-select:none;
+  cursor:pointer;
+  transition:filter 0.3s ease;
+  color:var(--red);
+}
+.hv-blurred:hover{
+  filter:blur(3px);
+}
+.hv-blurred.revealed{
+  filter:none;
+  cursor:default;
+}
+
+
+.hv-wrap{padding:24px;max-width:1100px;margin:0 auto;}
+.hv-title{font-size:20px;font-weight:300;letter-spacing:-0.04em;color:var(--text);margin-bottom:4px;}
+.hv-sub{font-size:13px;color:var(--text3);margin-bottom:20px;}
+.hv-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px;}
+.hv-stat{background:var(--bg2);border:1px solid var(--border);padding:14px;}
+.hv-stat-num{font-size:26px;font-weight:300;color:var(--text);font-family:var(--mono);}
+.hv-stat-num.danger{color:var(--red);}
+.hv-stat-num.warn{color:var(--amber);}
+.hv-stat-num.good{color:var(--green);}
+.hv-stat-lbl{font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);margin-top:2px;}
+.hv-filters{display:flex;gap:6px;margin-bottom:16px;align-items:center;flex-wrap:wrap;}
+.hv-filter-label{font-size:11px;color:var(--text3);margin-right:4px;text-transform:uppercase;letter-spacing:0.06em;}
+.hv-chip{font-size:11px;padding:3px 10px;border:1px solid var(--border);color:var(--text3);cursor:pointer;background:transparent;transition:all .1s;font-family:var(--mono);user-select:none;}
+.hv-chip:hover:not(.hv-chip-on){border-color:var(--border2);color:var(--text2);}
+.hv-chip-on{border-color:var(--text);color:var(--bg);background:var(--text);}
+.hv-chip-danger.hv-chip-on{border-color:var(--red);color:var(--red);background:rgba(255,85,85,0.1);}
+.hv-section{background:var(--bg2);border:1px solid var(--border);margin-bottom:16px;overflow:hidden;}
+.hv-section-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border);cursor:pointer;user-select:none;}
+.hv-section-hdr:hover{background:var(--bg3);}
+.hv-section-title{font-size:12px;font-weight:500;text-transform:uppercase;letter-spacing:0.08em;color:var(--text2);}
+.hv-section-count{font-size:11px;color:var(--text3);font-family:var(--mono);}
+.hv-tbl{width:100%;border-collapse:collapse;}
+.hv-tbl th{text-align:left;padding:8px 16px;border-bottom:1px solid var(--border);font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--text3);background:var(--bg3);}
+.hv-tbl td{padding:9px 16px;border-bottom:1px solid var(--border);font-size:13px;font-family:var(--mono);vertical-align:middle;}
+.hv-tbl tr:last-child td{border-bottom:none;}
+.hv-tbl tr{cursor:pointer;transition:background .1s;}
+.hv-tbl tr:hover td{background:var(--bg3);}
+.hv-badge{display:inline-block;font-size:10px;font-weight:500;padding:2px 7px;border-radius:3px;text-transform:uppercase;letter-spacing:0.05em;}
+.hv-badge-high{background:var(--red-bg);color:var(--red);border:1px solid var(--red);}
+.hv-badge-med{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber);}
+.hv-badge-low{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue);}
+.hv-val{color:var(--red);word-break:break-all;}
+.hv-val-safe{color:var(--text2);}
+.hv-copy{font-size:10px;padding:2px 7px;border:1px solid var(--border);background:transparent;color:var(--text3);cursor:pointer;transition:all .1s;margin-left:6px;vertical-align:middle;}
+.hv-copy:hover{border-color:var(--text);color:var(--text);}
+.hv-empty{padding:30px;text-align:center;color:var(--text3);font-size:13px;}
+.hv-redacted{color:var(--text3);font-style:italic;}
+.hv-reveal{font-size:10px;padding:1px 6px;border:1px solid var(--border);background:transparent;color:var(--text3);cursor:pointer;margin-left:6px;}
+.hv-reveal:hover{border-color:var(--red);color:var(--red);}
+
+
 .hm-wrap{padding:24px;max-width:1100px;margin:0 auto;}
 .hm-title{font-size:24px;font-weight:300;letter-spacing:-0.04em;color:var(--text);margin-bottom:4px;}
 .hm-sub{font-size:16px;color:var(--text3);margin-bottom:20px;}
@@ -352,6 +461,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:20
 .tab-panel.active{display:grid;}
 #tab-database.active{display:block;overflow-y:auto;height:calc(100vh - 56px);}
 #tab-heatmap.active{display:block;overflow-y:auto;height:calc(100vh - 56px);}
+#tab-harvester.active{display:block;overflow-y:auto;height:calc(100vh - 56px);}
+#tab-timeline.active{display:block;overflow-y:auto;height:calc(100vh - 56px);}
 #tab-search.active{display:flex;justify-content:center;overflow-y:auto;height:calc(100vh - 48px);}
 </style>
 </head>
@@ -366,6 +477,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:20
     <button class="tb-btn" onclick="switchTab('database')">Database</button>
     <button class="tb-btn" onclick="switchTab('search')">Search</button>
     <button class="tb-btn" onclick="switchTab('heatmap')">Heatmap</button>
+    <button class="tb-btn" onclick="switchTab('harvester')">Harvester</button>
+    <button class="tb-btn" onclick="switchTab('timeline')">Network</button>
   </div>
   <div class="tb-right">
     <button onclick="toggleTheme()" id="theme-btn" style="font-family:var(--sans);font-size:11px;padding:3px 10px;border:1px solid var(--border);background:transparent;color:var(--text3);cursor:pointer;border-radius:3px;transition:all .1s;" title="Toggle light/dark mode">🌙</button>
@@ -467,6 +580,105 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:20
     <div class="quick-tags" id="search-tags"></div>
     <div style="font-size:12px;color:var(--text3);margin-bottom:12px;" id="search-active-label"></div>
     <div id="search-results"></div>
+  </div>
+</div>
+
+<div id="tab-heatmap" class="tab-panel" style="height:calc(100vh - 56px);overflow-y:auto;">
+  <div class="hm-wrap">
+    <div class="hm-title">Geographic traffic map</div>
+    <div class="hm-sub">Origin and destination of captured network sessions</div>
+    <div class="hm-stats">
+      <div class="hm-stat"><div class="hm-stat-num" id="hm-countries">0</div><div class="hm-stat-lbl">Countries</div></div>
+      <div class="hm-stat"><div class="hm-stat-num" id="hm-domestic">0</div><div class="hm-stat-lbl">Domestic</div></div>
+      <div class="hm-stat"><div class="hm-stat-num" id="hm-foreign">0</div><div class="hm-stat-lbl">Foreign</div></div>
+      <div class="hm-stat"><div class="hm-stat-num" id="hm-suspicious">0</div><div class="hm-stat-lbl">Flagged IPs</div></div>
+    </div>
+    <div class="hm-map-wrap">
+      <div class="hm-map-title">Session origins — world map</div>
+      <div id="hm-map"></div>
+      <div class="hm-legend">
+        <span>Low</span>
+        <div class="hm-leg-bar">
+          <div class="hm-leg-seg" style="background:#102030;"></div>
+          <div class="hm-leg-seg" style="background:#1a3050;"></div>
+          <div class="hm-leg-seg" style="background:#2a4a6a;"></div>
+          <div class="hm-leg-seg" style="background:#3a6a96;"></div>
+          <div class="hm-leg-seg" style="background:#4a8ac0;"></div>
+        </div>
+        <span>High</span>
+        <span style="margin-left:16px;color:var(--red);">● Flagged</span>
+      </div>
+    </div>
+    <div class="hm-grid">
+      <div class="hm-table-wrap">
+        <div class="hm-table-title">Top source countries</div>
+        <table class="hm-tbl" id="hm-country-tbl">
+          <thead><tr><th>Country</th><th>Sessions</th><th>Volume</th></tr></thead>
+          <tbody><tr><td colspan="3" style="padding:20px;text-align:center;color:var(--text3);">Load a capture file</td></tr></tbody>
+        </table>
+      </div>
+      <div class="hm-table-wrap">
+        <div class="hm-table-title">Connection log</div>
+        <table class="hm-tbl" id="hm-conn-tbl">
+          <thead><tr><th>IP</th><th>Location</th><th>Sessions</th><th>Risk</th></tr></thead>
+          <tbody><tr><td colspan="4" style="padding:20px;text-align:center;color:var(--text3);">Load a capture file</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="tab-harvester" class="tab-panel" style="height:calc(100vh - 56px);overflow-y:auto;">
+  <div class="hv-wrap">
+    <div class="hv-title">Credential harvester</div>
+    <div class="hv-sub">All credentials, tokens, and secrets extracted across every session</div>
+    <div class="hv-stats">
+      <div class="hv-stat"><div class="hv-stat-num danger" id="hv-total">0</div><div class="hv-stat-lbl">Total found</div></div>
+      <div class="hv-stat"><div class="hv-stat-num danger" id="hv-passwords">0</div><div class="hv-stat-lbl">Passwords</div></div>
+      <div class="hv-stat"><div class="hv-stat-num warn" id="hv-tokens">0</div><div class="hv-stat-lbl">Tokens</div></div>
+      <div class="hv-stat"><div class="hv-stat-num warn" id="hv-basic">0</div><div class="hv-stat-lbl">Basic auth</div></div>
+      <div class="hv-stat"><div class="hv-stat-num good" id="hv-sessions-clean">0</div><div class="hv-stat-lbl">Clean sessions</div></div>
+    </div>
+    <div class="hv-filters">
+      <span class="hv-filter-label">Filter:</span>
+      <button class="hv-chip hv-chip-on" id="hvf-all" onclick="toggleHvFilter(this,'all')">All</button>
+      <button class="hv-chip" id="hvf-password" onclick="toggleHvFilter(this,'password')">Passwords</button>
+      <button class="hv-chip" id="hvf-token" onclick="toggleHvFilter(this,'token')">Tokens</button>
+      <button class="hv-chip" id="hvf-basic" onclick="toggleHvFilter(this,'basic')">Basic auth</button>
+      <button class="hv-chip" id="hvf-cookie" onclick="toggleHvFilter(this,'cookie')">Cookies</button>
+      <button class="hv-chip" id="hvf-key" onclick="toggleHvFilter(this,'key')">API keys</button>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
+        <span style="font-size:12px;color:var(--text3);">Redact values</span>
+        <input type="checkbox" id="hv-redact" onchange="renderHarvester()" style="cursor:pointer;">
+      </div>
+    </div>
+    <div id="hv-content">
+      <div class="hv-empty">Load a capture file to begin harvesting credentials</div>
+    </div>
+  </div>
+</div>
+
+
+<div id="tab-timeline" class="tab-panel" style="height:calc(100vh - 56px);">
+  <div class="net-wrap">
+    <div class="net-toolbar">
+      <span class="net-title-bar">Network topology</span>
+      <button class="net-chip net-chip-on" id="nf-HTTP" onclick="toggleNetProto(this,'HTTP')">HTTP</button>
+      <button class="net-chip net-chip-on" id="nf-HTTPS" onclick="toggleNetProto(this,'HTTPS')">TLS</button>
+      <button class="net-chip net-chip-on" id="nf-DNS" onclick="toggleNetProto(this,'DNS')">DNS</button>
+      <button class="net-chip net-chip-on" id="nf-FTP" onclick="toggleNetProto(this,'FTP')">FTP</button>
+      <button class="net-chip net-chip-on" id="nf-SMTP" onclick="toggleNetProto(this,'SMTP')">SMTP</button>
+      <div style="margin-left:auto;display:flex;gap:8px;">
+        <button class="net-chip" onclick="netPause()" id="net-pause-btn">⏸ Pause</button>
+        <button class="net-chip" onclick="netReset()">↺ Reset</button>
+      </div>
+    </div>
+    <div class="net-canvas-wrap">
+      <canvas id="net-canvas"></canvas>
+      <div class="net-stats" id="net-stats"></div>
+      <div class="net-info" id="net-info"></div>
+      <div class="net-legend" id="net-legend"></div>
+    </div>
   </div>
 </div>
 
@@ -756,7 +968,7 @@ function indexToDatabase(sess) {
   db.dns=sess.flatMap(s=>s.dns.map(d=>({...d,sessionId:s.id})));
   db.alerts=sess.flatMap(s=>s.alerts.map(a=>({...a,sessionId:s.id})));
   db.hosts=new Set(sess.flatMap(s=>[s.srcHost,s.dstHost]));
-  updateDbView();updateStats();if(document.getElementById("tab-heatmap").classList.contains("active"))renderHeatmap();
+  updateDbView();updateStats();if(document.getElementById("tab-heatmap").classList.contains("active"))renderHeatmap();if(document.getElementById("tab-harvester").classList.contains("active"))renderHarvester();if(document.getElementById("tab-timeline").classList.contains("active"))renderTimeline();
 }
 
 function updateStats() {
@@ -1090,6 +1302,8 @@ function switchTab(name) {
   document.querySelectorAll('.tb-btn').forEach(b=>b.classList.toggle('active',b.textContent.toLowerCase().includes(name)));
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id===`tab-${name}`));
   if(name==='heatmap') setTimeout(renderHeatmap, 50);
+  if(name==='harvester') setTimeout(renderHarvester, 50);
+  if(name==='timeline'){setTimeout(()=>{renderTimeline();initNetMouse();},50);}
 }
 
 // ── FILE MODAL ──
@@ -1408,6 +1622,634 @@ function renderWorldMap(countries, ips) {
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
   if(document.getElementById('tab-heatmap').classList.contains('active')) renderHeatmap();
 });
+
+
+// ── CREDENTIAL HARVESTER ──
+let hvFilter = 'all';
+
+function toggleHvFilter(el, filter) {
+  hvFilter = filter;
+  document.querySelectorAll('.hv-chip').forEach(c => c.classList.remove('hv-chip-on'));
+  el.classList.add('hv-chip-on');
+  renderHarvester();
+}
+
+function extractCredentials(sessions) {
+  const creds = [];
+
+  sessions.forEach(s => {
+    const sid = s.id;
+    const proto = s.proto;
+    const host = s.dstHost;
+    const ts = new Date(s.ts).toLocaleTimeString('en', {hour12:false});
+
+    // FTP cleartext USER/PASS
+    const headers = s.request?.headers || {};
+    if(headers['USER'] && headers['PASS']) {
+      creds.push({type:'password', severity:'high', proto, host, sid, ts,
+        label:'FTP credentials',
+        field:'USER / PASS',
+        value:`${headers['USER']} / ${headers['PASS']}`
+      });
+    }
+
+    // HTTP Basic Auth
+    const auth = headers['Authorization'] || headers['authorization'] || '';
+    if(auth.startsWith('Basic ')) {
+      try {
+        const decoded = atob(auth.slice(6));
+        creds.push({type:'basic', severity:'high', proto, host, sid, ts,
+          label:'HTTP Basic Auth',
+          field:'Authorization',
+          value:decoded
+        });
+      } catch(e) {
+        creds.push({type:'basic', severity:'high', proto, host, sid, ts,
+          label:'HTTP Basic Auth',
+          field:'Authorization',
+          value:auth
+        });
+      }
+    }
+
+    // Bearer tokens
+    if(auth.startsWith('Bearer ')) {
+      const token = auth.slice(7);
+      const isGhp = token.startsWith('ghp_');
+      creds.push({type:'token', severity: isGhp ? 'high' : 'med', proto, host, sid, ts,
+        label: isGhp ? 'GitHub Personal Access Token' : 'Bearer token',
+        field:'Authorization',
+        value:token
+      });
+    }
+
+    // API keys in headers
+    ['X-API-Key','X-Api-Key','api-key','API-Key','x-auth-token','X-Auth-Token'].forEach(k => {
+      if(headers[k]) {
+        creds.push({type:'key', severity:'high', proto, host, sid, ts,
+          label:`API key (${k})`,
+          field:k,
+          value:headers[k]
+        });
+      }
+    });
+
+    // Cookies
+    const cookie = headers['Cookie'] || headers['cookie'] || '';
+    if(cookie && cookie.length > 10) {
+      creds.push({type:'cookie', severity:'med', proto, host, sid, ts,
+        label:'Session cookie',
+        field:'Cookie',
+        value:cookie.length > 80 ? cookie.slice(0,80)+'...' : cookie
+      });
+    }
+
+    // SMTP AUTH PLAIN (base64 decoded)
+    const smtpAuth = headers['AUTH'] || '';
+    if(smtpAuth.startsWith('PLAIN ')) {
+      try {
+        const decoded = atob(smtpAuth.slice(6));
+        const parts = decoded.split(' ').filter(Boolean);
+        creds.push({type:'password', severity:'high', proto, host, sid, ts,
+          label:'SMTP AUTH PLAIN',
+          field:'AUTH',
+          value:parts.join(' / ')
+        });
+      } catch(e) {}
+    }
+
+    // Body credentials (form posts)
+    const body = s.request?.body || '';
+    const bodyPatterns = [
+      {re:/password=([^&\s]+)/i, label:'Form password', type:'password', severity:'high'},
+      {re:/passwd=([^&\s]+)/i, label:'Form password', type:'password', severity:'high'},
+      {re:/pwd=([^&\s]+)/i, label:'Form password', type:'password', severity:'high'},
+      {re:/pass=([^&\s]+)/i, label:'Form password', type:'password', severity:'high'},
+      {re:/"password"\s*:\s*"([^"]+)"/i, label:'JSON password', type:'password', severity:'high'},
+      {re:/api[_-]?key["\s:=]+([a-zA-Z0-9_\-]{16,})/i, label:'API key in body', type:'key', severity:'high'},
+      {re:/token["\s:=]+([a-zA-Z0-9_\-\.]{16,})/i, label:'Token in body', type:'token', severity:'med'},
+      {re:/secret["\s:=]+([a-zA-Z0-9_\-]{8,})/i, label:'Secret in body', type:'key', severity:'high'},
+    ];
+    bodyPatterns.forEach(({re, label, type, severity}) => {
+      const m = body.match(re);
+      if(m) {
+        creds.push({type, severity, proto, host, sid, ts,
+          label, field:'Request body', value:m[1]
+        });
+      }
+    });
+
+    // Alerts that mention credentials
+    s.alerts.forEach(a => {
+      if(a.title.toLowerCase().includes('credential') ||
+         a.title.toLowerCase().includes('password') ||
+         a.title.toLowerCase().includes('cleartext') ||
+         a.title.toLowerCase().includes('token')) {
+        // already captured above mostly, skip duplicates
+      }
+    });
+  });
+
+  return creds;
+}
+
+function renderHarvester() {
+  if(!sessions.length) return;
+
+  const creds = extractCredentials(sessions);
+  const redact = document.getElementById('hv-redact')?.checked;
+
+  // Filter
+  const filtered = hvFilter === 'all' ? creds : creds.filter(c => c.type === hvFilter);
+
+  // Update stats
+  document.getElementById('hv-total').textContent = creds.length;
+  document.getElementById('hv-passwords').textContent = creds.filter(c=>c.type==='password').length;
+  document.getElementById('hv-tokens').textContent = creds.filter(c=>c.type==='token'||c.type==='key').length;
+  document.getElementById('hv-basic').textContent = creds.filter(c=>c.type==='basic').length;
+  const dirtySessions = new Set(creds.map(c=>c.sid)).size;
+  document.getElementById('hv-sessions-clean').textContent = sessions.length - dirtySessions;
+
+  if(!filtered.length) {
+    document.getElementById('hv-content').innerHTML =
+      `<div class="hv-empty">${hvFilter === 'all' ? 'No credentials found in this capture' : `No ${hvFilter} credentials found`}</div>`;
+    return;
+  }
+
+  // Group by severity
+  const high = filtered.filter(c=>c.severity==='high');
+  const med  = filtered.filter(c=>c.severity==='med');
+  const low  = filtered.filter(c=>c.severity==='low');
+
+  const renderGroup = (items, label, badgeClass) => {
+    if(!items.length) return '';
+    return `
+      <div class="hv-section">
+        <div class="hv-section-hdr" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'':'none'">
+          <span class="hv-section-title">${label}</span>
+          <span class="hv-section-count">${items.length} found</span>
+        </div>
+        <div>
+          <table class="hv-tbl">
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Field</th>
+                <th>Value</th>
+                <th>Host</th>
+                <th>Proto</th>
+                <th>Time</th>
+                <th>Session</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${items.map((c,i) => `
+                <tr onclick="switchTab('capture');setTimeout(()=>selectSession('${c.sid}'),50)">
+                  <td><span class="hv-badge ${badgeClass}">${escHtml(c.label)}</span></td>
+                  <td style="color:var(--text2)">${escHtml(c.field)}</td>
+                  <td>
+                    ${redact
+                      ? `<span class="hv-blurred hv-val" id="hv-val-${i}" onclick="event.stopPropagation();this.classList.toggle('revealed')" title="Click to reveal">${escHtml(c.value)}</span>`
+                      : `<span class="hv-val">${escHtml(c.value)}</span>
+                         <button class="hv-copy" onclick="event.stopPropagation();navigator.clipboard.writeText('${escHtml(c.value)}');this.textContent='✓';setTimeout(()=>this.textContent='copy',1200)">copy</button>`
+                    }
+                  </td>
+                  <td style="color:var(--text2)">${escHtml(c.host)}</td>
+                  <td><span class="si-proto proto-${c.proto}">${c.proto}</span></td>
+                  <td style="color:var(--text3)">${c.ts}</td>
+                  <td style="color:var(--text3)">${c.sid}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  };
+
+  document.getElementById('hv-content').innerHTML =
+    renderGroup(high, 'High severity', 'hv-badge-high') +
+    renderGroup(med,  'Medium severity', 'hv-badge-med') +
+    renderGroup(low,  'Low severity', 'hv-badge-low');
+}
+
+function revealCred(i) {
+  const el = document.getElementById(`hv-val-${i}`);
+  if(el) el.classList.toggle('revealed');
+}
+
+
+// ── NETWORK TOPOLOGY MAP ──
+const NET_COLORS = {
+  HTTP:'#55cc55', HTTPS:'#5599ff', DNS:'#ffaa33',
+  FTP:'#ff5555', SMTP:'#cc77ff', TCP:'#aaaaaa'
+};
+
+let netNodes = [], netEdges = [], netPackets = [];
+let netVisibleProtos = new Set(['HTTP','HTTPS','DNS','FTP','SMTP','TCP']);
+let netAnimFrame = null, netPaused = false;
+let netDragging = null, netDragOffX = 0, netDragOffY = 0;
+let netHovered = null;
+
+function toggleNetProto(el, proto) {
+  if(netVisibleProtos.has(proto)) { netVisibleProtos.delete(proto); el.classList.remove('net-chip-on'); }
+  else { netVisibleProtos.add(proto); el.classList.add('net-chip-on'); }
+  buildNetGraph();
+}
+
+function netPause() {
+  netPaused = !netPaused;
+  document.getElementById('net-pause-btn').textContent = netPaused ? '▶ Resume' : '⏸ Pause';
+}
+
+function netReset() {
+  netNodes.forEach(n => { n.vx = (Math.random()-0.5)*2; n.vy = (Math.random()-0.5)*2; });
+}
+
+function buildNetGraph() {
+  if(!sessions.length) return;
+
+  const filtered = sessions.filter(s => netVisibleProtos.has(s.proto));
+  const hostMap = {};
+
+  filtered.forEach(s => {
+    const src = s.srcHost || s.src.split(':')[0];
+    const dst = s.dstHost || s.dst.split(':')[0];
+
+    if(!hostMap[src]) hostMap[src] = {id:src, label:src, sessions:[], type:'internal', connections:0};
+    if(!hostMap[dst]) hostMap[dst] = {id:dst, label:dst, sessions:[], type:'external', connections:0};
+
+    hostMap[src].sessions.push(s);
+    hostMap[dst].sessions.push(s);
+    hostMap[src].connections++;
+    hostMap[dst].connections++;
+    hostMap[src].type = src.startsWith('10.')||src.startsWith('192.')||src.startsWith('172.')||src==='workstation-7'||src==='mail-relay' ? 'internal' : 'external';
+    hostMap[dst].type = dst.startsWith('10.')||dst.startsWith('192.')||dst.startsWith('172.')||dst==='workstation-7'||dst==='mail-relay' ? 'internal' : 'external';
+  });
+
+  const canvas = document.getElementById('net-canvas');
+  const W = canvas.clientWidth || 900;
+  const H = canvas.clientHeight || 500;
+
+  // Keep existing positions for nodes we already have
+  const existingPositions = {};
+  netNodes.forEach(n => existingPositions[n.id] = {x:n.x, y:n.y, vx:n.vx, vy:n.vy});
+
+  netNodes = Object.values(hostMap).map(h => {
+    const existing = existingPositions[h.id];
+    return {
+      ...h,
+      x: existing ? existing.x : W/2 + (Math.random()-0.5)*W*0.6,
+      y: existing ? existing.y : H/2 + (Math.random()-0.5)*H*0.6,
+      vx: existing ? existing.vx : (Math.random()-0.5)*2,
+      vy: existing ? existing.vy : (Math.random()-0.5)*2,
+      glow: 0,
+      radius: 8 + Math.min(h.connections * 3, 20),
+    };
+  });
+
+  // Build edges
+  const edgeMap = {};
+  filtered.forEach(s => {
+    const src = s.srcHost || s.src.split(':')[0];
+    const dst = s.dstHost || s.dst.split(':')[0];
+    const key = src + '|||' + dst;
+    if(!edgeMap[key]) edgeMap[key] = {src, dst, sessions:[], protos:new Set()};
+    edgeMap[key].sessions.push(s);
+    edgeMap[key].protos.add(s.proto);
+  });
+  netEdges = Object.values(edgeMap);
+
+  // Spawn initial packets
+  netPackets = [];
+  filtered.slice(0, 30).forEach((s, i) => {
+    setTimeout(() => spawnPacket(s), i * 80);
+  });
+
+  // Update legend
+  const protos = [...new Set(filtered.map(s=>s.proto))];
+  document.getElementById('net-legend').innerHTML = protos.map(p => `
+    <div class="net-legend-item">
+      <div class="net-legend-dot" style="background:${NET_COLORS[p]};box-shadow:0 0 4px ${NET_COLORS[p]};"></div>
+      <span>${p}</span>
+    </div>
+  `).join('');
+
+  // Stats
+  document.getElementById('net-stats').innerHTML = `
+    <div class="net-stat-pill">Nodes: <b>${netNodes.length}</b></div>
+    <div class="net-stat-pill">Edges: <b>${netEdges.length}</b></div>
+    <div class="net-stat-pill">Sessions: <b>${filtered.length}</b></div>
+  `;
+}
+
+function spawnPacket(session) {
+  if(!session) return;
+  const src = session.srcHost || session.src.split(':')[0];
+  const dst = session.dstHost || session.dst.split(':')[0];
+  const srcNode = netNodes.find(n=>n.id===src);
+  const dstNode = netNodes.find(n=>n.id===dst);
+  if(!srcNode || !dstNode) return;
+
+  netPackets.push({
+    src, dst, proto: session.proto,
+    sid: session.id,
+    t: 0, speed: 0.008 + Math.random()*0.006,
+    color: NET_COLORS[session.proto] || '#888',
+    size: 3 + Math.random()*2,
+    alerts: session.alerts.filter(a=>a.sev==='high').length > 0,
+  });
+
+  // Glow source node
+  if(srcNode) srcNode.glow = 1.0;
+}
+
+function renderTimeline() { buildNetGraph(); startNetLoop(); }
+
+function startNetLoop() {
+  if(netAnimFrame) cancelAnimationFrame(netAnimFrame);
+  const canvas = document.getElementById('net-canvas');
+  if(!canvas) return;
+
+  const wrap = canvas.parentElement;
+  canvas.width = wrap.clientWidth;
+  canvas.height = wrap.clientHeight;
+
+  const loop = () => {
+    if(!document.getElementById('tab-timeline').classList.contains('active')) {
+      cancelAnimationFrame(netAnimFrame);
+      return;
+    }
+    netAnimFrame = requestAnimationFrame(loop);
+    if(!netPaused) {
+      updatePhysics(canvas.width, canvas.height);
+      updatePackets();
+    }
+    drawNet(canvas);
+  };
+  loop();
+}
+
+function updatePhysics(W, H) {
+  const REPEL = 3000, ATTRACT = 0.002, DAMP = 0.88, EDGE_FORCE = 0.05;
+
+  netNodes.forEach(n => {
+    let fx = 0, fy = 0;
+
+    // Repulsion between nodes
+    netNodes.forEach(m => {
+      if(m === n) return;
+      const dx = n.x - m.x, dy = n.y - m.y;
+      const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+      const force = REPEL / (dist * dist);
+      fx += (dx/dist) * force;
+      fy += (dy/dist) * force;
+    });
+
+    // Attraction along edges
+    netEdges.forEach(e => {
+      let other = null;
+      if(e.src === n.id) other = netNodes.find(m=>m.id===e.dst);
+      if(e.dst === n.id) other = netNodes.find(m=>m.id===e.src);
+      if(!other) return;
+      const dx = other.x - n.x, dy = other.y - n.y;
+      const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+      const ideal = 150 + n.radius + other.radius;
+      const stretch = dist - ideal;
+      fx += (dx/dist) * stretch * ATTRACT * 50;
+      fy += (dy/dist) * stretch * ATTRACT * 50;
+    });
+
+    // Center gravity
+    fx += (W/2 - n.x) * 0.002;
+    fy += (H/2 - n.y) * 0.002;
+
+    n.vx = (n.vx + fx * 0.01) * DAMP;
+    n.vy = (n.vy + fy * 0.01) * DAMP;
+
+    // Clamp velocity
+    const speed = Math.sqrt(n.vx*n.vx + n.vy*n.vy);
+    if(speed > 3) { n.vx *= 3/speed; n.vy *= 3/speed; }
+
+    if(netDragging !== n) {
+      n.x += n.vx;
+      n.y += n.vy;
+    }
+
+    // Bounce off edges
+    const pad = n.radius + 20;
+    if(n.x < pad) { n.x = pad; n.vx = Math.abs(n.vx); }
+    if(n.x > W-pad) { n.x = W-pad; n.vx = -Math.abs(n.vx); }
+    if(n.y < pad) { n.y = pad; n.vy = Math.abs(n.vy); }
+    if(n.y > H-pad) { n.y = H-pad; n.vy = -Math.abs(n.vy); }
+
+    // Decay glow
+    if(n.glow > 0) n.glow = Math.max(0, n.glow - 0.02);
+  });
+}
+
+function updatePackets() {
+  // Advance packets
+  netPackets.forEach(p => { p.t += p.speed; });
+
+  // Remove finished packets, respawn some
+  const done = netPackets.filter(p => p.t >= 1);
+  netPackets = netPackets.filter(p => p.t < 1);
+
+  // Glow destination on arrival
+  done.forEach(p => {
+    const dst = netNodes.find(n=>n.id===p.dst);
+    if(dst) dst.glow = 0.8;
+  });
+
+  // Keep spawning packets from sessions
+  if(sessions.length && netPackets.length < 20 && !netPaused) {
+    const filtered = sessions.filter(s => netVisibleProtos.has(s.proto));
+    if(filtered.length) {
+      const s = filtered[Math.floor(Math.random() * filtered.length)];
+      spawnPacket(s);
+    }
+  }
+}
+
+function drawNet(canvas) {
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const isDark = !document.documentElement.getAttribute('data-theme') ||
+                  document.documentElement.getAttribute('data-theme') === 'dark';
+
+  ctx.fillStyle = isDark ? '#000000' : '#f9f9f7';
+  ctx.fillRect(0, 0, W, H);
+
+  if(!netNodes.length) {
+    ctx.fillStyle = isDark ? '#333' : '#999';
+    ctx.font = '14px DM Sans, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Load a capture file to see the network topology', W/2, H/2);
+    return;
+  }
+
+  // Draw edges
+  netEdges.forEach(e => {
+    const src = netNodes.find(n=>n.id===e.src);
+    const dst = netNodes.find(n=>n.id===e.dst);
+    if(!src || !dst) return;
+
+    // Check if any visible proto uses this edge
+    const visibleProtos = [...e.protos].filter(p=>netVisibleProtos.has(p));
+    if(!visibleProtos.length) return;
+
+    const col = NET_COLORS[visibleProtos[0]] || '#888';
+    ctx.beginPath();
+    ctx.moveTo(src.x, src.y);
+    ctx.lineTo(dst.x, dst.y);
+    ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  });
+
+  // Draw packets
+  netPackets.forEach(p => {
+    const src = netNodes.find(n=>n.id===p.src);
+    const dst = netNodes.find(n=>n.id===p.dst);
+    if(!src || !dst) return;
+    if(!netVisibleProtos.has(p.proto)) return;
+
+    const x = src.x + (dst.x - src.x) * p.t;
+    const y = src.y + (dst.y - src.y) * p.t;
+
+    // Glow trail
+    const grad = ctx.createRadialGradient(x, y, 0, x, y, p.size * 4);
+    grad.addColorStop(0, p.color + 'aa');
+    grad.addColorStop(1, p.color + '00');
+    ctx.beginPath();
+    ctx.arc(x, y, p.size * 4, 0, Math.PI * 2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Core dot
+    ctx.beginPath();
+    ctx.arc(x, y, p.size, 0, Math.PI * 2);
+    ctx.fillStyle = p.alerts ? '#ff5555' : p.color;
+    ctx.fill();
+
+    // Alert dot extra ring
+    if(p.alerts) {
+      ctx.beginPath();
+      ctx.arc(x, y, p.size + 3, 0, Math.PI * 2);
+      ctx.strokeStyle = '#ff555566';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+  });
+
+  // Draw nodes
+  netNodes.forEach(n => {
+    const isHovered = netHovered === n;
+    const col = n.type === 'internal' ? (isDark?'#5599ff':'#1a52a8') : (isDark?'#aaaaaa':'#555555');
+    const r = n.radius;
+
+    // Glow ring
+    if(n.glow > 0) {
+      const g = ctx.createRadialGradient(n.x, n.y, r, n.x, n.y, r + 20 * n.glow);
+      g.addColorStop(0, col + Math.round(n.glow * 99).toString(16).padStart(2,'0'));
+      g.addColorStop(1, col + '00');
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, r + 20 * n.glow, 0, Math.PI*2);
+      ctx.fillStyle = g;
+      ctx.fill();
+    }
+
+    // Node circle
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, r, 0, Math.PI*2);
+    ctx.fillStyle = isDark ? '#111111' : '#ffffff';
+    ctx.fill();
+    ctx.strokeStyle = isHovered ? (isDark?'#ffffff':'#000000') : col;
+    ctx.lineWidth = isHovered ? 2 : 1.5;
+    ctx.stroke();
+
+    // Inner dot
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, r * 0.35, 0, Math.PI*2);
+    ctx.fillStyle = col;
+    ctx.fill();
+
+    // Label
+    const label = n.label.length > 16 ? n.label.slice(0,14)+'…' : n.label;
+    ctx.font = `${isHovered?'500 ':''}12px DM Sans, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = isDark ? (isHovered?'#ffffff':'#888888') : (isHovered?'#000000':'#666666');
+    ctx.fillText(label, n.x, n.y + r + 14);
+  });
+}
+
+// Mouse interaction
+function initNetMouse() {
+  const canvas = document.getElementById('net-canvas');
+  if(!canvas || canvas._netMouseInited) return;
+  canvas._netMouseInited = true;
+
+  const getNode = (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    return netNodes.find(n => Math.sqrt((n.x-mx)**2+(n.y-my)**2) < n.radius + 8);
+  };
+
+  canvas.addEventListener('mousedown', e => {
+    const n = getNode(e);
+    if(n) { netDragging = n; n.vx = 0; n.vy = 0; }
+  });
+
+  canvas.addEventListener('mousemove', e => {
+    const rect = canvas.getBoundingClientRect();
+    if(netDragging) {
+      netDragging.x = e.clientX - rect.left;
+      netDragging.y = e.clientY - rect.top;
+    }
+    const hov = getNode(e);
+    if(hov !== netHovered) {
+      netHovered = hov;
+      canvas.style.cursor = hov ? 'pointer' : 'default';
+      const info = document.getElementById('net-info');
+      if(hov) {
+        const sessList = sessions.filter(s =>
+          (s.srcHost||s.src.split(':')[0])===hov.id ||
+          (s.dstHost||s.dst.split(':')[0])===hov.id
+        );
+        const alerts = sessList.reduce((a,s)=>a+s.alerts.filter(x=>x.sev==='high').length,0);
+        const protos = [...new Set(sessList.map(s=>s.proto))].join(', ');
+        const bytes = sessList.reduce((a,s)=>a+(s.bytes?.req||0)+(s.bytes?.res||0),0);
+        info.style.display = 'block';
+        info.innerHTML = `
+          <div class="net-info-title">${hov.label}</div>
+          <div class="net-info-row">Type <span>${hov.type}</span></div>
+          <div class="net-info-row">Sessions <span>${sessList.length}</span></div>
+          <div class="net-info-row">Protocols <span>${protos||'—'}</span></div>
+          <div class="net-info-row">Total bytes <span>${formatBytes(bytes)}</span></div>
+          ${alerts?`<div class="net-info-row" style="color:var(--red);">High alerts <span style="color:var(--red);">${alerts}</span></div>`:''}
+        `;
+      } else {
+        info.style.display = 'none';
+      }
+    }
+  });
+
+  canvas.addEventListener('mouseup', () => { netDragging = null; });
+  canvas.addEventListener('mouseleave', () => {
+    netDragging = null;
+    netHovered = null;
+    document.getElementById('net-info').style.display = 'none';
+  });
+
+  canvas.addEventListener('click', e => {
+    const n = getNode(e);
+    if(n && n.sessions?.length) {
+      switchTab('capture');
+      setTimeout(()=>selectSession(n.sessions[0].id), 50);
+    }
+  });
+}
 
 // drag/drop
 const dz=document.getElementById('drop-zone');
