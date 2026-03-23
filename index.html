@@ -7,21 +7,83 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#ffffff;--bg2:#fafafa;--bg3:#f5f5f5;--bg4:#eeeeee;
-  --border:#e8e8e8;--border2:#d8d8d8;
-  --text:#111111;--text2:#555555;--text3:#999999;
-  --accent:#111111;--accent-light:#f0f0f0;
-  --red:#cc0000;--red-bg:#fff5f5;
-  --green:#008800;--green-bg:#f5fff5;
-  --amber:#996600;--amber-bg:#fffdf0;
-  --blue:#0055cc;--blue-bg:#f0f5ff;
-  --purple:#660099;--purple-bg:#faf0ff;
+  --bg:#000000;--bg2:#0a0a0a;--bg3:#111111;--bg4:#1a1a1a;
+  --border:#222222;--border2:#333333;
+  --text:#ffffff;--text2:#aaaaaa;--text3:#555555;
+  --accent:#ffffff;--accent-light:#111111;
+  --red:#ff5555;--red-bg:#1a0000;
+  --green:#55cc55;--green-bg:#001a00;
+  --amber:#ffaa33;--amber-bg:#1a1000;
+  --blue:#5599ff;--blue-bg:#00101a;
+  --purple:#cc77ff;--purple-bg:#0f001a;
   --sans:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
+}
+@media(prefers-color-scheme:light){
+  :root{
+    --bg:#f9f9f7;--bg2:#ffffff;--bg3:#f2f2ef;--bg4:#e8e8e4;
+    --border:#e0e0db;--border2:#c8c8c2;
+    --text:#1c1c1a;--text2:#5a5a54;--text3:#9a9a92;
+    --accent:#1c1c1a;--accent-light:#efefeb;
+    --red:#b83232;--red-bg:#fef4f4;
+    --green:#2a7a2a;--green-bg:#f2faf2;
+    --amber:#8a6000;--amber-bg:#fefbf0;
+    --blue:#1a52a8;--blue-bg:#f0f4fc;
+    --purple:#5a2a8a;--purple-bg:#f6f0fc;
+  }
+}
+[data-theme="light"]{
+  --bg:#f9f9f7;--bg2:#ffffff;--bg3:#f2f2ef;--bg4:#e8e8e4;
+  --border:#e0e0db;--border2:#c8c8c2;
+  --text:#1c1c1a;--text2:#5a5a54;--text3:#9a9a92;
+  --accent:#1c1c1a;--accent-light:#efefeb;
+  --red:#b83232;--red-bg:#fef4f4;
+  --green:#2a7a2a;--green-bg:#f2faf2;
+  --amber:#8a6000;--amber-bg:#fefbf0;
+  --blue:#1a52a8;--blue-bg:#f0f4fc;
+  --purple:#5a2a8a;--purple-bg:#f6f0fc;
+}
+[data-theme="dark"]{
+  --bg:#000000;--bg2:#0a0a0a;--bg3:#111111;--bg4:#1a1a1a;
+  --border:#222222;--border2:#333333;
+  --text:#ffffff;--text2:#aaaaaa;--text3:#555555;
+  --accent:#ffffff;--accent-light:#111111;
+  --red:#ff5555;--red-bg:#1a0000;
+  --green:#55cc55;--green-bg:#001a00;
+  --amber:#ffaa33;--amber-bg:#1a1000;
+  --blue:#5599ff;--blue-bg:#00101a;
+  --purple:#cc77ff;--purple-bg:#0f001a;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{height:100%;overflow:hidden;zoom:1.25;}
 body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13px;line-height:1.6;}
 ::-webkit-scrollbar{width:3px;}
+
+.hm-wrap{padding:24px;max-width:1100px;margin:0 auto;}
+.hm-title{font-size:20px;font-weight:300;letter-spacing:-0.04em;color:var(--text);margin-bottom:4px;}
+.hm-sub{font-size:12px;color:var(--text3);margin-bottom:20px;}
+.hm-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;}
+.hm-stat{background:var(--bg2);border:1px solid var(--border);padding:14px;border-radius:4px;}
+.hm-stat-num{font-size:26px;font-weight:300;color:var(--text);font-family:var(--mono);}
+.hm-stat-lbl{font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);margin-top:2px;}
+.hm-map-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:4px;overflow:hidden;margin-bottom:16px;position:relative;}
+.hm-map-title{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);padding:10px 14px;border-bottom:1px solid var(--border);}
+#hm-map{width:100%;height:420px;}
+.hm-legend{display:flex;align-items:center;gap:6px;padding:8px 14px;border-top:1px solid var(--border);font-size:11px;color:var(--text3);}
+.hm-leg-bar{display:flex;gap:0;height:8px;width:120px;border-radius:2px;overflow:hidden;}
+.hm-leg-seg{flex:1;}
+.hm-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.hm-table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:4px;overflow:hidden;}
+.hm-table-title{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);padding:10px 14px;border-bottom:1px solid var(--border);}
+.hm-tbl{width:100%;border-collapse:collapse;font-size:12px;}
+.hm-tbl th{text-align:left;padding:6px 14px;border-bottom:1px solid var(--border);font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--text3);}
+.hm-tbl td{padding:7px 14px;border-bottom:1px solid var(--border);color:var(--text);font-family:var(--mono);}
+.hm-tbl tr:last-child td{border-bottom:none;}
+.hm-tbl tr:hover td{background:var(--bg3);}
+.hm-bar{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:3px;}
+.hm-bar-fill{height:100%;border-radius:2px;background:var(--blue);}
+.hm-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px;vertical-align:middle;}
+.hm-empty{padding:40px;text-align:center;color:var(--text3);font-size:12px;}
+
 ::-webkit-scrollbar-thumb{background:var(--border2);}
 
 #app{display:grid;grid-template-rows:48px 1fr;height:100vh;}
@@ -61,9 +123,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13
 .filter-input:focus{border-bottom-color:var(--text);}
 .filter-input::placeholder{color:var(--text3);}
 .proto-row{display:flex;gap:4px;flex-wrap:wrap;margin-top:8px;}
-.proto-btn{font-family:var(--sans);font-size:10px;padding:2px 8px;border:1px solid var(--border);background:transparent;color:var(--text3);cursor:pointer;transition:all .1s;}
-.proto-btn.on{border-color:var(--text);color:var(--text);background:var(--text);color:white;}
-.proto-btn:hover:not(.on){color:var(--text);}
+.proto-btn{font-family:var(--sans);font-size:10px;padding:2px 8px;border:1px solid var(--border);background:transparent;color:var(--text3);cursor:pointer;transition:all .1s;user-select:none;}
+.proto-btn.on{border-color:var(--text);color:var(--bg);background:var(--text);}
+.proto-btn:hover:not(.on){color:var(--text);border-color:var(--border2);}
 
 .sess-list{flex:1;overflow-y:auto;padding:8px;}
 .sess-item{padding:10px 8px;margin-bottom:1px;cursor:pointer;border-left:2px solid transparent;padding-left:10px;transition:all .1s;}
@@ -89,7 +151,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13
 .cmdbar{display:flex;align-items:center;gap:8px;padding:8px 16px;border-bottom:1px solid var(--border);background:var(--bg);}
 .cmd-btn{font-family:var(--sans);font-size:11px;padding:5px 12px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;transition:all .1s;}
 .cmd-btn:hover{border-color:var(--text);color:var(--text);}
-.cmd-btn.primary{border-color:var(--text);background:var(--text);color:white;}
+.cmd-btn.primary{border-color:var(--text);background:var(--text);color:var(--bg);}
 .cmd-btn.primary:hover{opacity:0.8;}
 .cmd-btn:disabled{opacity:0.3;cursor:not-allowed;}
 .cmd-sep{width:1px;height:16px;background:var(--border);}
@@ -210,7 +272,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13
 
 .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;margin-bottom:20px;border:1px solid var(--border);}
 .stat-box{padding:16px;background:var(--bg);}
-.stat-num{font-size:32px;font-weight:300;color:var(--text);font-family:var(--mono);letter-spacing:-0.03em;}
+.stat-num{font-size:32px;font-weight:300;color:var(--text);font-family:var(--mono);letter-spacing:-0.03em;opacity:0.9;}
 .stat-lbl{font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);margin-top:2px;}
 .stat-sub{font-size:11px;color:var(--red);margin-top:2px;}
 .db-section-title{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);margin:16px 0 6px;}
@@ -223,10 +285,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13
 .search-wrap{max-width:620px;margin:0 auto;padding:32px 20px;}
 .search-hdr{font-size:22px;font-weight:300;color:var(--text);margin-bottom:4px;letter-spacing:-0.04em;}
 .search-sub{font-size:12px;color:var(--text3);margin-bottom:20px;}
-.search-row{display:flex;gap:0;margin-bottom:10px;border:1px solid var(--border);}
+.search-row{display:flex;gap:0;margin-bottom:10px;border:1px solid var(--border);border-radius:4px;overflow:hidden;}
 .search-inp{flex:1;background:transparent;border:none;padding:10px 14px;color:var(--text);font-family:var(--sans);font-size:13px;outline:none;}
 .search-inp::placeholder{color:var(--text3);}
-.search-go{font-family:var(--sans);font-size:12px;font-weight:500;padding:10px 18px;border:none;border-left:1px solid var(--border);background:var(--text);color:white;cursor:pointer;letter-spacing:0.03em;}
+.search-go{font-family:var(--sans);font-size:12px;font-weight:500;padding:10px 18px;border:none;border-left:1px solid var(--border);background:var(--text);color:var(--bg);cursor:pointer;letter-spacing:0.03em;}
 .search-go:hover{opacity:0.8;}
 .quick-tags{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:20px;}
 .qtag{font-size:11px;padding:3px 10px;border:1px solid var(--border);color:var(--text3);cursor:pointer;background:transparent;transition:all .1s;font-family:var(--mono);}
@@ -302,8 +364,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13
     <button class="tb-btn active" onclick="switchTab('capture')">Capture</button>
     <button class="tb-btn" onclick="switchTab('database')">Database</button>
     <button class="tb-btn" onclick="switchTab('search')">Search</button>
+    <button class="tb-btn" onclick="switchTab('heatmap')">Heatmap</button>
   </div>
   <div class="tb-right">
+    <button onclick="toggleTheme()" id="theme-btn" style="font-family:var(--sans);font-size:11px;padding:3px 10px;border:1px solid var(--border);background:transparent;color:var(--text3);cursor:pointer;border-radius:3px;transition:all .1s;" title="Toggle light/dark mode">🌙</button>
     <span class="tb-stat">Sessions <b id="stat-sessions">0</b></span>
     <span class="tb-stat">Files <b id="stat-files">0</b></span>
     <span class="tb-stat">Alerts <b id="stat-alerts" style="color:var(--red)">0</b></span>
@@ -324,12 +388,12 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13
     <div class="filter-wrap">
       <input class="filter-input" type="text" placeholder="Filter sessions..." id="filter-input" oninput="applyFilter()">
       <div class="proto-row">
-        <button class="proto-btn on" onclick="toggleProto(this,'ALL')">All</button>
-        <button class="proto-btn" onclick="toggleProto(this,'HTTP')">HTTP</button>
-        <button class="proto-btn" onclick="toggleProto(this,'HTTPS')">TLS</button>
-        <button class="proto-btn" onclick="toggleProto(this,'DNS')">DNS</button>
-        <button class="proto-btn" onclick="toggleProto(this,'FTP')">FTP</button>
-        <button class="proto-btn" onclick="toggleProto(this,'SMTP')">SMTP</button>
+        <button class="proto-btn" onclick="toggleProtoFilter(this,'HTTP')">HTTP</button>
+        <button class="proto-btn" onclick="toggleProtoFilter(this,'HTTPS')">TLS</button>
+        <button class="proto-btn" onclick="toggleProtoFilter(this,'DNS')">DNS</button>
+        <button class="proto-btn" onclick="toggleProtoFilter(this,'FTP')">FTP</button>
+        <button class="proto-btn" onclick="toggleProtoFilter(this,'SMTP')">SMTP</button>
+        <button class="proto-btn proto-clear" onclick="clearProtoFilters()" style="color:var(--text3);font-size:9px;padding:2px 6px;opacity:0.6;" id="proto-clear-btn">clear</button>
       </div>
     </div>
     <div class="sess-list" id="sessions-list"><div style="padding:20px;text-align:center;color:var(--text3);font-size:12px;">Load a capture file</div></div>
@@ -435,6 +499,16 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13
 </div>
 
 <script>
+// ── THEME TOGGLE ──
+function toggleTheme() {
+  const html = document.documentElement;
+  const current = html.getAttribute('data-theme') || 'dark';
+  const next = current === 'dark' ? 'light' : 'dark';
+  html.setAttribute('data-theme', next);
+  document.getElementById('theme-btn').textContent = next === 'dark' ? '🌙' : '☀';
+  if(document.getElementById('tab-heatmap').classList.contains('active')) renderHeatmap();
+}
+
 // ── CLOCK ──
 setInterval(()=>{
   const n=new Date();
@@ -443,7 +517,8 @@ setInterval(()=>{
 
 // ── STATE ──
 let sessions=[],db={sessions:[],files:[],dns:[],alerts:[],hosts:new Set()};
-let selectedSession=null,activeProto='ALL',activeDetailTab='overview',rpMode='timeline';
+let selectedSession=null,activeDetailTab='overview',rpMode='timeline';
+let activeProtos=new Set();
 let currentModalFile=null;
 
 // ── DEMO DATA ──
@@ -456,7 +531,7 @@ function generateDemoData() {
       srcHost:'workstation-7', dstHost:'example.com',
       bytes:{ req:2048, res:45320 }, duration:342,
       state:'CLOSED', flags:['file','dns'],
-      request:{ method:'GET', uri:'/download/report-2024.pdf', version:'HTTP/1.1',
+      request:{ method:'GET', url:'/download/report-2024.pdf', version:'HTTP/1.1',
         headers:{ 'Host':'example.com','User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64)','Accept':'*/*','Connection':'keep-alive' } },
       response:{ status:200, statusText:'OK',
         headers:{ 'Content-Type':'application/pdf','Content-Length':'44312','Content-Disposition':'attachment; filename="report-2024.pdf"','Server':'nginx/1.18.0','Cache-Control':'no-cache' },
@@ -486,7 +561,7 @@ function generateDemoData() {
       srcHost:'workstation-7', dstHost:'github.com',
       bytes:{ req:1024, res:8192 }, duration:891,
       state:'ESTABLISHED', flags:['tls'],
-      request:{ method:'POST', uri:'/api/v1/repos/user/repo/git/commits', version:'HTTP/1.1',
+      request:{ method:'POST', url:'/api/v1/repos/user/repo/git/commits', version:'HTTP/1.1',
         headers:{ 'Host':'api.github.com','Authorization':'Bearer ghp_xxxxxxxxxxxxxxxxxxxx','Content-Type':'application/json','User-Agent':'git/2.39.0' },
         body:'{"message":"Update config","content":"base64=="}' },
       response:{ status:201, statusText:'Created',
@@ -509,7 +584,7 @@ function generateDemoData() {
       srcHost:'workstation-7', dstHost:'dns.google',
       bytes:{ req:68, res:84 }, duration:12,
       state:'CLOSED', flags:['dns'],
-      request:{ method:'QUERY', uri:'suspicious-domain-xyz123.ru', version:'DNS',
+      request:{ method:'QUERY', url:'suspicious-domain-xyz123.ru', version:'DNS',
         headers:{ 'Type':'A','Class':'IN','ID':'0x4A2F' }, body:'' },
       response:{ status:0, statusText:'NOERROR', headers:{ 'TTL':'300','Answer':'185.220.101.42' }, body:'' },
       files:[],
@@ -534,7 +609,7 @@ function generateDemoData() {
       srcHost:'workstation-7', dstHost:'ftp.corp-server.internal',
       bytes:{ req:512, res:1048576 }, duration:4200,
       state:'CLOSED', flags:['file','creds'],
-      request:{ method:'RETR', uri:'/exports/customer_data_2024.csv', version:'FTP',
+      request:{ method:'RETR', url:'/exports/customer_data_2024.csv', version:'FTP',
         headers:{ 'USER':'jsmith','PASS':'Summer2024!','TYPE':'I','PASV':'' }, body:'' },
       response:{ status:226, statusText:'Transfer complete', headers:{ 'Size':'1048576','Transfer-time':'4.2s' }, body:'' },
       files:[
@@ -568,7 +643,7 @@ function generateDemoData() {
       srcHost:'mail-relay', dstHost:'smtp.gmail.com',
       bytes:{ req:8192, res:512 }, duration:1100,
       state:'CLOSED', flags:['file','creds'],
-      request:{ method:'EHLO', uri:'mail-relay.corp.local', version:'SMTP',
+      request:{ method:'EHLO', url:'mail-relay.corp.local', version:'SMTP',
         headers:{ 'EHLO':'mail-relay.corp.local','AUTH':'PLAIN AGpzbWl0aABTdW1tZXIyMDI0IQ==','MAIL FROM':'<reports@corp.local>','RCPT TO':'<external@gmail.com>','Subject':'Q4 Financial Report - CONFIDENTIAL' },
         body:'From: reports@corp.local\r\nTo: external@gmail.com\r\nSubject: Q4 Financial Report - CONFIDENTIAL\r\n\r\nPlease find attached the Q4 financial report.\r\n' },
       response:{ status:250, statusText:'OK: accepted', headers:{}, body:'' },
@@ -601,7 +676,7 @@ function generateDemoData() {
 
 function generateHex(session) {
   const lines=[];
-  const raw=`${session.request.method} ${session.request.uri} ${session.request.version}\r\n`+
+  const raw=`${session.request.method} ${session.request.url} ${session.request.version}\r\n`+
     Object.entries(session.request.headers).map(([k,v])=>`${k}: ${v}`).join('\r\n')+'\r\n\r\n';
   for(let i=0;i<Math.min(raw.length,128);i+=16){
     const chunk=raw.slice(i,i+16);
@@ -679,7 +754,7 @@ function indexToDatabase(sess) {
   db.dns=sess.flatMap(s=>s.dns.map(d=>({...d,sessionId:s.id})));
   db.alerts=sess.flatMap(s=>s.alerts.map(a=>({...a,sessionId:s.id})));
   db.hosts=new Set(sess.flatMap(s=>[s.srcHost,s.dstHost]));
-  updateDbView();updateStats();
+  updateDbView();updateStats();if(document.getElementById("tab-heatmap").classList.contains("active"))renderHeatmap();
 }
 
 function updateStats() {
@@ -717,7 +792,7 @@ function exportData() {
 // ── SESSION LIST ──
 function renderSessions(list) {
   const el=document.getElementById('sessions-list');
-  const filt=list.filter(s=>activeProto==='ALL'||s.proto===activeProto);
+  const filt=list.filter(s=>activeProtos.size===0||activeProtos.has(s.proto));
   const q=document.getElementById('filter-input').value.toLowerCase();
   const filtered=filt.filter(s=>!q||s.srcHost.toLowerCase().includes(q)||s.dstHost.toLowerCase().includes(q)||s.src.includes(q)||s.dst.includes(q)||s.proto.toLowerCase().includes(q));
   if(!filtered.length){el.innerHTML='<div style="padding:20px;text-align:center;color:var(--text3);font-size:10px;letter-spacing:0.06em;">No sessions match filter</div>';return;}
@@ -752,12 +827,29 @@ function selectSession(id) {
   switchDetailTab(activeDetailTab);
 }
 
-function toggleProto(el,proto) {
-  activeProto=proto;
-  document.querySelectorAll('.proto-btn').forEach(b=>b.classList.remove('on'));
-  el.classList.add('on');
+let activeProtos = new Set();
+
+function toggleProtoFilter(el, proto) {
+  if(activeProtos.has(proto)) {
+    activeProtos.delete(proto);
+    el.classList.remove('on');
+  } else {
+    activeProtos.add(proto);
+    el.classList.add('on');
+  }
+  const clearBtn = document.getElementById('proto-clear-btn');
+  if(clearBtn) clearBtn.style.opacity = activeProtos.size > 0 ? '1' : '0.6';
   renderSessions(sessions);
 }
+
+function clearProtoFilters() {
+  activeProtos.clear();
+  document.querySelectorAll('.proto-btn:not(.proto-clear)').forEach(b=>b.classList.remove('on'));
+  const clearBtn = document.getElementById('proto-clear-btn');
+  if(clearBtn) clearBtn.style.opacity = '0.6';
+  renderSessions(sessions);
+}
+
 function applyFilter(){renderSessions(sessions);}
 
 // ── DETAIL TABS ──
@@ -801,7 +893,7 @@ function renderOverview() {
     </div></div>`:''}
     <div class="section"><div class="section-hdr">Request metadata</div><div class="kv-grid">
       <div class="kv-key">METHOD</div><div class="kv-val" style="color:#ffcc00">${s.request.method}</div>
-      <div class="kv-key">URI</div><div class="kv-val hi">${s.request.uri}</div>
+      <div class="kv-key">URL</div><div class="kv-val hi">${s.request.url}</div>
       <div class="kv-key">VERSION</div><div class="kv-val dim">${s.request.version}</div>
       ${Object.entries(s.request.headers).map(([k,v])=>`
         <div class="kv-key">${k}</div>
@@ -838,7 +930,7 @@ function renderPayload() {
 function formatPayload(msg) {
   const isReq='method' in msg;
   const sc=msg.status&&msg.status<300?'ps-ok':msg.status>=400?'ps-err':'';
-  const lines=isReq?[`<span class="pm">${msg.method}</span> ${escHtml(msg.uri)} ${msg.version}`]:[`<span class="${sc}">${msg.status} ${msg.statusText}</span>`];
+  const lines=isReq?[`<span class="pm">${msg.method}</span> ${escHtml(msg.url)} ${msg.version}`]:[`<span class="${sc}">${msg.status} ${msg.statusText}</span>`];
   Object.entries(msg.headers).forEach(([k,v])=>{
     const isDanger=k==='Authorization'||k==='PASS';
     lines.push(`<span class="pk">${escHtml(k)}</span>: <span class="${isDanger?'pdanger':'pv2'}">${escHtml(v)}</span>`);
@@ -997,6 +1089,7 @@ function highlightMatch(text,q) {
 function switchTab(name) {
   document.querySelectorAll('.tb-btn').forEach(b=>b.classList.toggle('active',b.textContent.toLowerCase().includes(name)));
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id===`tab-${name}`));
+  if(name==='heatmap') renderHeatmap();
 }
 
 // ── FILE MODAL ──
@@ -1090,6 +1183,231 @@ function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').
 function extractFile(name){alert(`In a real deployment, "${name}" would be extracted from the reassembled stream.`);}
 
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){document.getElementById('file-modal').classList.add('hidden');document.body.style.overflow='';}});
+
+
+// ── GEO IP DATA ──
+// Simulated geo data based on demo session IPs
+const GEO_DB = {
+  '93.184.216.34':  {country:'United States', cc:'US', lat:37.09, lon:-95.71, flag:'🇺🇸', risk:'clean'},
+  '140.82.121.4':   {country:'United States', cc:'US', lat:37.09, lon:-95.71, flag:'🇺🇸', risk:'clean'},
+  '8.8.8.8':        {country:'United States', cc:'US', lat:37.09, lon:-95.71, flag:'🇺🇸', risk:'clean'},
+  '185.220.101.42': {country:'Germany',       cc:'DE', lat:51.16, lon:10.45,  flag:'🇩🇪', risk:'high'},
+  '203.0.113.55':   {country:'China',         cc:'CN', lat:35.86, lon:104.19, flag:'🇨🇳', risk:'med'},
+  '74.125.224.109': {country:'United States', cc:'US', lat:37.09, lon:-95.71, flag:'🇺🇸', risk:'clean'},
+  '10.0.1.45':      {country:'Local network', cc:'LO', lat:0,     lon:0,      flag:'🏠',  risk:'clean'},
+  '10.0.1.22':      {country:'Local network', cc:'LO', lat:0,     lon:0,      flag:'🏠',  risk:'clean'},
+};
+
+function getGeo(ip) {
+  if(GEO_DB[ip]) return GEO_DB[ip];
+  // Rough guess from IP range for unknown IPs
+  const first = parseInt(ip.split('.')[0]);
+  if(first===10||first===192||first===172) return {country:'Local network',cc:'LO',lat:0,lon:0,flag:'🏠',risk:'clean'};
+  return {country:'Unknown',cc:'??',lat:20,lon:0,flag:'🌐',risk:'unknown'};
+}
+
+function renderHeatmap() {
+  if(!sessions.length) return;
+
+  // Aggregate geo data
+  const countryMap = {};
+  const ipMap = {};
+  let foreign=0, domestic=0, flagged=0;
+
+  sessions.forEach(s => {
+    const dstIp = s.dst.split(':')[0];
+    const geo = getGeo(dstIp);
+    if(!GEO_DB[dstIp] && dstIp.startsWith('10.')) return;
+
+    // Country counts
+    if(!countryMap[geo.country]) countryMap[geo.country]={...geo,count:0,bytes:0};
+    countryMap[geo.country].count++;
+    countryMap[geo.country].bytes += (s.bytes?.req||0)+(s.bytes?.res||0);
+
+    // IP counts
+    if(!ipMap[dstIp]) ipMap[dstIp]={...geo,ip:dstIp,count:0};
+    ipMap[dstIp].count++;
+
+    if(geo.cc==='LO') domestic++;
+    else foreign++;
+    if(geo.risk==='high'||geo.risk==='med') flagged++;
+  });
+
+  const countries = Object.values(countryMap).filter(c=>c.cc!=='LO').sort((a,b)=>b.count-a.count);
+  const ips = Object.values(ipMap).filter(i=>i.cc!=='LO').sort((a,b)=>b.count-a.count);
+  const uniqueCountries = new Set(countries.map(c=>c.cc)).size;
+
+  // Update stats
+  document.getElementById('hm-countries').textContent = uniqueCountries;
+  document.getElementById('hm-domestic').textContent = domestic;
+  document.getElementById('hm-foreign').textContent = foreign;
+  document.getElementById('hm-suspicious').textContent = flagged;
+
+  // Render SVG world map
+  renderWorldMap(countries, ips);
+
+  // Country table
+  const maxCount = countries[0]?.count||1;
+  document.querySelector('#hm-country-tbl tbody').innerHTML = countries.length ?
+    countries.map(c=>`
+      <tr>
+        <td>${c.flag} ${c.country}</td>
+        <td>${c.count}</td>
+        <td>
+          <div class="hm-bar"><div class="hm-bar-fill" style="width:${Math.round((c.count/maxCount)*100)}%"></div></div>
+        </td>
+      </tr>
+    `).join('') :
+    '<tr><td colspan="3" class="hm-empty">No external sessions</td></tr>';
+
+  // Connection log
+  const riskColor = {high:'var(--red)',med:'var(--amber)',clean:'var(--green)',unknown:'var(--text3)'};
+  const riskLabel = {high:'High',med:'Medium',clean:'Clean',unknown:'Unknown'};
+  document.querySelector('#hm-conn-tbl tbody').innerHTML = ips.length ?
+    ips.slice(0,12).map(i=>`
+      <tr>
+        <td>${i.ip}</td>
+        <td>${i.flag} ${i.country}</td>
+        <td>${i.count}</td>
+        <td style="color:${riskColor[i.risk]||'var(--text3)'};">${riskLabel[i.risk]||'—'}</td>
+      </tr>
+    `).join('') :
+    '<tr><td colspan="4" class="hm-empty">No external connections</td></tr>';
+}
+
+function renderWorldMap(countries, ips) {
+  const mapEl = document.getElementById('hm-map');
+  if(!mapEl) return;
+
+  const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const oceanColor = isDark ? '#1a1a18' : '#f0f4f8';
+  const landColor  = isDark ? '#2a2a27' : '#e8e8e2';
+  const borderColor= isDark ? '#3a3a36' : '#d0d0c8';
+  const textColor  = isDark ? '#9a9a92' : '#888880';
+
+  // Simple equirectangular projection
+  const W = mapEl.clientWidth || 900;
+  const H = 420;
+
+  // Build country intensity map
+  const maxCount = Math.max(1, ...countries.map(c=>c.count));
+  const intensityMap = {};
+  countries.forEach(c=>{ intensityMap[c.cc] = c.count/maxCount; });
+
+  // Dot colors for IPs
+  const riskDotColor = {high:'#cc3333',med:'#cc8800',clean:'#2a7a2a',unknown:'#888'};
+
+  function latLonToXY(lat, lon) {
+    const x = ((lon + 180) / 360) * W;
+    const y = ((90 - lat) / 180) * H;
+    return [Math.round(x), Math.round(y)];
+  }
+
+  function intensityToColor(intensity, isDark) {
+    if(isDark) {
+      if(intensity>0.8) return '#4a8ac0';
+      if(intensity>0.6) return '#3a6a96';
+      if(intensity>0.4) return '#2a4a6a';
+      if(intensity>0.2) return '#1a3050';
+      return '#102030';
+    } else {
+      if(intensity>0.8) return '#1a52a8';
+      if(intensity>0.6) return '#3a72c8';
+      if(intensity>0.4) return '#6a9ad8';
+      if(intensity>0.2) return '#9abce8';
+      return '#c8daf4';
+    }
+  }
+
+  // Simplified country polygons as circles/dots on map
+  // We'll use known capital/center coordinates for major countries
+  const COUNTRY_CENTERS = {
+    'US':[38,-97],'GB':[55,-3],'DE':[51,10],'FR':[46,2],'CN':[35,105],
+    'RU':[60,100],'JP':[36,138],'AU':[-25,134],'IN':[20,77],'BR':[-10,-55],
+    'CA':[56,-96],'MX':[23,-102],'ZA':[-29,25],'NG':[10,8],'EG':[27,30],
+    'SA':[24,45],'AE':[24,54],'KR':[36,128],'ID':[-5,120],'AR':[-34,-64],
+    'TR':[39,35],'IT':[42,12],'ES':[40,-4],'PL':[52,20],'NL':[52,5],
+    'SE':[60,15],'NO':[60,10],'UA':[49,32],'TH':[15,101],'MY':[4,109],
+  };
+
+  // Build dots for active IPs
+  const ipDots = ips.map(ip => {
+    const [lat, lon] = [ip.lat, ip.lon];
+    if(lat===0 && lon===0) return '';
+    const [x, y] = latLonToXY(lat, lon);
+    const col = riskDotColor[ip.risk] || '#888';
+    const r = Math.min(3 + ip.count * 2, 12);
+    return `<circle cx="${x}" cy="${y}" r="${r}" fill="${col}" fill-opacity="0.7" stroke="${col}" stroke-width="1">
+      <title>${ip.ip} — ${ip.country} (${ip.count} sessions)</title>
+    </circle>
+    <circle cx="${x}" cy="${y}" r="${r+4}" fill="${col}" fill-opacity="0.15"/>`;
+  }).join('');
+
+  // Country heat blobs
+  const countryBlobs = Object.entries(intensityMap).map(([cc, intensity]) => {
+    const coords = COUNTRY_CENTERS[cc];
+    if(!coords) return '';
+    const [lat, lon] = coords;
+    const [x, y] = latLonToXY(lat, lon);
+    const col = intensityToColor(intensity, isDark);
+    const r = 20 + intensity * 30;
+    return `<circle cx="${x}" cy="${y}" r="${r}" fill="${col}" fill-opacity="0.5"/>`;
+  }).join('');
+
+  // Simplified world outline paths (major landmasses as rough shapes)
+  const landPaths = `
+    <!-- North America -->
+    <path d="M80,60 L180,55 L190,80 L200,120 L180,160 L140,180 L110,200 L90,190 L70,170 L60,140 L65,100 Z" fill="${landColor}" stroke="${borderColor}" stroke-width="0.5"/>
+    <!-- South America -->
+    <path d="M150,200 L210,195 L230,220 L240,270 L220,320 L190,360 L160,360 L145,320 L140,270 L145,230 Z" fill="${landColor}" stroke="${borderColor}" stroke-width="0.5"/>
+    <!-- Europe -->
+    <path d="M380,50 L460,45 L480,60 L490,80 L470,100 L440,110 L400,105 L375,90 L370,70 Z" fill="${landColor}" stroke="${borderColor}" stroke-width="0.5"/>
+    <!-- Africa -->
+    <path d="M390,115 L460,110 L490,130 L500,170 L510,220 L500,280 L470,320 L430,330 L400,310 L380,270 L370,220 L375,170 L380,140 Z" fill="${landColor}" stroke="${borderColor}" stroke-width="0.5"/>
+    <!-- Asia -->
+    <path d="M470,45 L680,40 L720,60 L740,90 L730,130 L690,150 L640,160 L580,165 L520,150 L490,130 L480,100 L470,70 Z" fill="${landColor}" stroke="${borderColor}" stroke-width="0.5"/>
+    <!-- Australia -->
+    <path d="M640,240 L730,235 L760,250 L770,280 L750,310 L700,320 L650,310 L630,285 L625,260 Z" fill="${landColor}" stroke="${borderColor}" stroke-width="0.5"/>
+    <!-- Greenland -->
+    <path d="M200,20 L260,18 L270,35 L255,50 L220,52 L200,40 Z" fill="${landColor}" stroke="${borderColor}" stroke-width="0.5"/>
+  `;
+
+  // Grid lines
+  const gridLines = [];
+  for(let lon=-150; lon<=150; lon+=30) {
+    const [x1] = latLonToXY(90, lon);
+    gridLines.push(`<line x1="${x1}" y1="0" x2="${x1}" y2="${H}" stroke="${borderColor}" stroke-width="0.3" stroke-dasharray="2,4"/>`);
+  }
+  for(let lat=-60; lat<=60; lat+=30) {
+    const [,y1] = latLonToXY(lat, -180);
+    gridLines.push(`<line x1="0" y1="${y1}" x2="${W}" y2="${y1}" stroke="${borderColor}" stroke-width="0.3" stroke-dasharray="2,4"/>`);
+  }
+
+  // Labels
+  const labels = [
+    [38,-97,'US'],[55,-3,'EU'],[35,105,'AS'],[20,77,'IN'],
+    [-25,134,'AU'],[-10,-55,'SA'],[60,100,'RU']
+  ].map(([lat,lon,label])=>{
+    const [x,y] = latLonToXY(lat,lon);
+    return `<text x="${x}" y="${y}" text-anchor="middle" font-size="9" fill="${textColor}" font-family="DM Sans, sans-serif" opacity="0.6">${label}</text>`;
+  }).join('');
+
+  mapEl.innerHTML = `
+    <svg width="100%" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+      <rect width="${W}" height="${H}" fill="${oceanColor}"/>
+      ${gridLines.join('')}
+      ${landPaths}
+      ${countryBlobs}
+      ${ipDots}
+      ${labels}
+    </svg>
+  `;
+}
+
+// Re-render map on dark mode change
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+  if(document.getElementById('tab-heatmap').classList.contains('active')) renderHeatmap();
+});
 
 // drag/drop
 const dz=document.getElementById('drop-zone');
