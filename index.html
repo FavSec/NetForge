@@ -58,6 +58,12 @@ html,body{height:100%;overflow:hidden;}
 body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:20px;line-height:1.6;}
 ::-webkit-scrollbar{width:3px;}
 
+.sess-item{padding:10px 10px;margin-bottom:1px;cursor:pointer;border-left:2px solid transparent;padding-left:10px;transition:all .1s;position:relative;}
+.sess-remove{position:absolute;top:-5px;right:-5px;width:18px;height:18px;border-radius:50%;background:#ff3333;border:2px solid var(--bg);display:none;align-items:center;justify-content:center;cursor:pointer;z-index:10;transition:all .1s;color:white;font-size:12px;font-weight:700;line-height:1;}
+.sess-item:hover .sess-remove{display:flex;}
+.sess-remove:hover{background:#cc0000;transform:scale(1.15);}
+
+
 .net-wrap{height:100%;display:flex;flex-direction:column;}
 .net-toolbar{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0;}
 .net-title-bar{font-size:13px;font-weight:500;color:var(--text);}
@@ -2263,6 +2269,20 @@ function initNetMouse() {
       setTimeout(()=>selectSession(n.sessions[0].id), 50);
     }
   });
+}
+
+
+function removeSession(id) {
+  sessions = sessions.filter(s => s.id !== id);
+  if(selectedSession && selectedSession.id === id) {
+    selectedSession = null;
+    document.getElementById('empty-detail').style.display = 'flex';
+    document.getElementById('session-detail').classList.add('hidden');
+    document.getElementById('rp-body').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text3);font-size:12px;">Select a session</div>';
+  }
+  indexToDatabase(sessions);
+  renderSessions(sessions);
+  updateStats();
 }
 
 // drag/drop
