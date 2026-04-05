@@ -2346,17 +2346,8 @@ function removeSession(id) {
 
 // drag/drop
 const dz=document.getElementById('drop-zone');
-dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag-over');});
-dz.addEventListener('dragleave',()=>dz.classList.remove('drag-over'));
-dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag-over');handleFileUpload(e.dataTransfer.files);});
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        if (typeof switchTab === 'function') {
-            switchTab('capture');
-        } else {
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof switchTab === 'function') switchTab('capture');
             document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('active'));
-        }
-    });
-</script>
-</body>
-</html>
+        });
