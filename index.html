@@ -2347,7 +2347,32 @@ function removeSession(id) {
 // drag/drop
 const dz=document.getElementById('drop-zone');
 <script>
+        // CORE UI ENGINE
+        function switchTab(tabId) {
+            // Hide all panels
+            document.querySelectorAll('.tab-panel').forEach(panel => {
+                panel.classList.remove('active');
+                panel.style.display = 'none';
+            });
+            // Deactivate all nav buttons
+            document.querySelectorAll('.tb-btn').forEach(btn => btn.classList.remove('active'));
+            
+            // Show target panel
+            const target = document.getElementById('tab-' + tabId);
+            if (target) {
+                target.classList.add('active');
+                target.style.display = 'grid'; // Ensures grid layouts don't break
+            }
+            
+            // Highlight button
+            const btn = document.querySelector(`[onclick="switchTab('${tabId}')"]`);
+            if (btn) btn.classList.add('active');
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
-            if (typeof switchTab === 'function') switchTab('capture');
-            document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('active'));
+            console.log("NetForge Initialized");
+            switchTab('capture'); // Force start on Capture tab
         });
+    </script>
+</body>
+</html>
