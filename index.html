@@ -2346,33 +2346,41 @@ function removeSession(id) {
 
 // drag/drop
 const dz=document.getElementById('drop-zone');
-<script>
-        // CORE UI ENGINE
-        function switchTab(tabId) {
-            // Hide all panels
-            document.querySelectorAll('.tab-panel').forEach(panel => {
-                panel.classList.remove('active');
-                panel.style.display = 'none';
-            });
-            // Deactivate all nav buttons
-            document.querySelectorAll('.tb-btn').forEach(btn => btn.classList.remove('active'));
-            
-            // Show target panel
-            const target = document.getElementById('tab-' + tabId);
-            if (target) {
-                target.classList.add('active');
-                target.style.display = 'grid'; // Ensures grid layouts don't break
-            }
-            
-            // Highlight button
-            const btn = document.querySelector(`[onclick="switchTab('${tabId}')"]`);
-            if (btn) btn.classList.add('active');
+</style>
+</head>
+<body>
+    <div id="app">
+        <div class="topbar">
+            <div class="tb-logo"><div class="tb-title">NetForge <span>v1.0</span></div></div>
+            <div class="tb-nav">
+                <button class="tb-btn active" onclick="switchTab('capture')">Capture</button>
+                <button class="tb-btn" onclick="switchTab('timeline')">Timeline</button>
+                <button class="tb-btn" onclick="switchTab('analysis')">Analysis</button>
+            </div>
+        </div>
+        <div id="tab-capture" class="tab-panel active" style="display:grid;">
+            <div class="main-grid">
+                <div class="left-panel">
+                    <div class="panel-hdr"><span class="panel-hdr-title">Sessions</span></div>
+                    <div class="sess-list" id="session-list"></div>
+                </div>
+                <div class="center-panel">
+                    <div class="empty">
+                        <div class="empty-title">No Data Captured</div>
+                        <div class="empty-sub">Upload a PCAP or start a live session.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        function switchTab(t) {
+            document.querySelectorAll('.tab-panel').forEach(p => p.style.display = 'none');
+            document.querySelectorAll('.tb-btn').forEach(b => b.classList.remove('active'));
+            const target = document.getElementById('tab-' + t);
+            if(target) target.style.display = 'grid';
         }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log("NetForge Initialized");
-            switchTab('capture'); // Force start on Capture tab
-        });
     </script>
 </body>
 </html>
+<script>
