@@ -490,8 +490,11 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:20
                 const list = document.querySelector('.sess-list');
                 if (!list) return;
 
+                // 1. Create a new div for the packet
                 const row = document.createElement('div');
                 row.className = 'sess-item';
+                
+                // 2. Fill it with the data (matching original CSS)
                 row.innerHTML = `
                     <div class="si-top">
                         <span class="si-proto proto-${packet.proto || 'TCP'}">${packet.proto || 'TCP'}</span>
@@ -502,12 +505,14 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:20
                         <span class="si-bytes">${packet.bytes || 0} B</span>
                     </div>
                 `;
+
+                // 3. SLOTS IT AT THE TOP (Doesn't delete anything else)
                 list.prepend(row);
 
+                // 4. Update your counter
                 const counter = document.querySelector('.tb-stat b');
                 if (counter) counter.innerText = this.stats.totalPackets;
             }
-        };
 
         // 2. THE ADAPTER BRIDGE
         function connectToAdapter() {
