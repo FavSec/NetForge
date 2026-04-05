@@ -449,7 +449,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:20
 .csv-warn{font-size:15px;color:var(--amber);padding:8px 12px;border-left:3px solid var(--amber);margin-bottom:10px;background:var(--amber-bg);}
 .csv-tbl{width:100%;border-collapse:collapse;font-size:15px;font-family:var(--mono);}
 .csv-tbl th{text-align:left;padding:5px 8px;border-bottom:1px solid var(--border);font-weight:500;color:var(--text3);position:sticky;top:0;background:var(--bg);font-size:14px;}
-.csv-tbl td{padding:4px 8px;border-bottom:1px solid var(--border);color:var(--text);}
+csv-tbl td{padding:4px 8px;border-bottom:1px solid var(--border);color:var(--text);}
 .csv-tbl td.pii{color:var(--red);}
 .csv-tbl tr:nth-child(even) td{background:var(--bg2);}
 .str-line{display:flex;gap:12px;padding:3px 0;border-bottom:1px solid var(--border);font-size:15px;font-family:var(--mono);}
@@ -2349,13 +2349,14 @@ const dz=document.getElementById('drop-zone');
 dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag-over');});
 dz.addEventListener('dragleave',()=>dz.classList.remove('drag-over'));
 dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag-over');handleFileUpload(e.dataTransfer.files);});
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        if (typeof switchTab === 'function') {
+            switchTab('capture');
+        } else {
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('active'));
+        }
+    });
 </script>
 </body>
 </html>
-
-</style>
-</head>
-<body>
-    <div id="app">
-        </div>
-
