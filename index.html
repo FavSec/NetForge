@@ -473,6 +473,75 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:20
 </style>
 </head>
 <body>
+    <script>
+        // 1. THE IN-MEMORY DATABASE
+        const NetForgeDB = {
+            sessions: [],
+            stats: { totalPackets: 0 },
+
+            addTraffic: function(packet) {
+                this.sessions.unshift(packet);
+                this.stats.totalPackets++;
+                if (this.sessions.length > 100) this.sessions.pop();
+                this.renderToUI(packet);
+            },
+
+            renderToUI: function(packet) {
+                const list = document.querySelector('.sess-list');
+                if (!list) return;
+
+                const row = document.createElement('div');
+                row.className = 'sess-item';
+                row.innerHTML = `
+                    <div class="si-top">
+                        <span class="si-proto proto-${packet.proto || 'TCP'}">${packet.proto || 'TCP'}</span>
+                        <span class="si-time">${new Date().toLocaleTimeString()}</span>
+                    </div>
+                    <div class="si-hosts">${packet.src} → ${packet.dest}</div>
+                    <div class="si-bottom">
+                        <span class="si-bytes">${packet.bytes || 0} B</span>
+                    </div>
+                `;
+                list.prepend(row);
+
+                const counter = document.querySelector('.tb-stat b');
+                if (counter) counter.innerText = this.stats.totalPackets;
+            }
+        };
+
+        // 2. THE ADAPTER BRIDGE
+        function connectToAdapter() {
+            const socket = new WebSocket('ws://localhost:8080');
+            socket.onopen = () => {
+                const title = document.querySelector('.tb-title');
+                if (title) title.style.color = "var(--green)";
+            };
+            socket.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                NetForgeDB.addTraffic(data);
+            };
+            socket.onclose = () => {
+                const title = document.querySelector('.tb-title');
+                if (title) title.style.color = "var(--red)";
+            };
+        }
+
+        // 3. START ON BUTTON CLICK
+        document.addEventListener('DOMContentLoaded', () => {
+            const demoBtn = document.querySelector('.demo-btn');
+            if (demoBtn) {
+                demoBtn.addEventListener('click', () => {
+                    demoBtn.innerText = "ADAPTER LIVE";
+                    connectToAdapter();
+                });
+            }
+        });
+    </script>
+</body>
+</html>
+</style>
+</head>
+<body>
 <div id="app">
 <div class="topbar">
   <div class="tb-logo">
@@ -2293,3 +2362,10 @@ dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag-over
 </script>
 </body>
 </html>
+
+</style>
+</head>
+<body>
+    <div id="app">
+        </div>
+
