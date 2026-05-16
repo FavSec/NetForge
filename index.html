@@ -912,30 +912,471 @@ function loadDemoData() {
 }
 
 async function handleFileUpload(files) {
-  if(!files.length)return;
-  const file=files[0];
-  showProgress(`Uploading ${file.name}...`,null);
+  if(!files.length) return;
+  const file = files[0];
+  showProgress(`Parsing ${file.name}...`, null);
   try {
-    const h=await fetch('http://localhost:5050/health',{signal:AbortSignal.timeout(1500)});
-    if(!h.ok)throw new Error('unhealthy');
-    const form=new FormData();form.append('file',file);
-    const res=await fetch('http://localhost:5050/analyze',{method:'POST',body:form});
-    if(!res.ok){const e=await res.json();throw new Error(e.error||'error');}
-    const data=await res.json();
-    sessions=data.sessions;
+    const buf = await file.arrayBuffer();
+    const parsed = parsePcap(buf);
+    if(!parsed || !parsed.length) throw new Error('No sessions found');
+    sessions = parsed;
     renderSessions(sessions);
-    document.getElementById('run-btn').disabled=false;
-    document.getElementById('export-btn').disabled=false;
+    document.getElementById('run-btn').disabled = false;
+    document.getElementById('export-btn').disabled = false;
     indexToDatabase(sessions);
     document.getElementById('progress-wrap').classList.add('hidden');
-    document.getElementById('progress-bar').style.width='0%';
+    document.getElementById('progress-bar').style.width = '0%';
   } catch(err) {
-    sessions=generateDemoData();
-    renderSessions(sessions);
-    document.getElementById('run-btn').disabled=false;
-    document.getElementById('export-btn').disabled=false;
-    showProgress('Backend offline — showing demo data',()=>{ indexToDatabase(sessions); });
+    showProgress('Parse error: ' + err.message + ' — showing demo data', () => {
+      sessions = generateDemoData();
+      renderSessions(sessions);
+      document.getElementById('run-btn').disabled = false;
+      document.getElementById('export-btn').disabled = false;
+      indexToDatabase(sessions);
+    });
   }
+}
+
+// ── PCAP PARSER ──
+function parsePcap(buf) {
+  const view = new DataView(buf);
+  if(buf.byteLength < 24) throw new Error('File too small');
+
+  const magic = view.getUint32(0, true);
+  const le = magic === 0xa1b2c3d4 || magic === 0xa1b23c4d;
+  const nano = magic === 0xa1b23c4d || magic === 0xd4c3b2a1 && view.getUint32(0,false)===0xa1b23c4d;
+  if(magic !== 0xa1b2c3d4 && magic !== 0xd4c3b2a1 && magic !== 0xa1b23c4d && magic !== 0x4d3cb2a1) {
+    throw new Error('Not a valid pcap file (bad magic)');
+  }
+
+  const linkType = view.getUint32(20, le);
+  const ETHERNET = 1, RAW_IP = 101, LINUX_SLL = 113;
+
+  const tcpStreams = {}; // key: "srcIP:srcPort-dstIP:dstPort"
+  const udpSessions = {};
+  let pktOffset = 24;
+  let pktIdx = 0;
+
+  while(pktOffset + 16 <= buf.byteLength) {
+    const tsSec  = view.getUint32(pktOffset, le);
+    const tsUsec = view.getUint32(pktOffset+4, le);
+    const inclLen = view.getUint32(pktOffset+8, le);
+    const origLen = view.getUint32(pktOffset+12, le);
+    pktOffset += 16;
+    if(pktOffset + inclLen > buf.byteLength) break;
+
+    const ts = tsSec * 1000 + (nano ? tsUsec/1e6 : tsUsec/1000);
+    const pktBuf = buf.slice(pktOffset, pktOffset + inclLen);
+    pktOffset += inclLen;
+    pktIdx++;
+
+    try {
+      let ipOffset = 0;
+      if(linkType === ETHERNET) ipOffset = 14;
+      else if(linkType === LINUX_SLL) ipOffset = 16;
+      else if(linkType === RAW_IP) ipOffset = 0;
+      else ipOffset = 14;
+
+      const pkt = new DataView(pktBuf);
+      if(pktBuf.byteLength < ipOffset + 20) continue;
+
+      // Ethernet: check ethertype
+      if(linkType === ETHERNET) {
+        const ethertype = (pkt.getUint8(12)<<8)|pkt.getUint8(13);
+        if(ethertype === 0x8100) ipOffset = 18; // VLAN
+        if(ethertype !== 0x0800 && ethertype !== 0x0806 && ethertype !== 0x8100) continue;
+        if(ethertype === 0x0806) continue; // ARP skip
+      }
+
+      const ipVer = (pkt.getUint8(ipOffset) >> 4);
+      if(ipVer !== 4) continue; // IPv6 skip for now
+
+      const ihl = (pkt.getUint8(ipOffset) & 0x0f) * 4;
+      const proto = pkt.getUint8(ipOffset+9);
+      const srcIP = readIPv4(pkt, ipOffset+12);
+      const dstIP = readIPv4(pkt, ipOffset+16);
+      const transOffset = ipOffset + ihl;
+
+      if(proto === 6) { // TCP
+        if(pktBuf.byteLength < transOffset + 20) continue;
+        const srcPort = pkt.getUint16(transOffset, false);
+        const dstPort = pkt.getUint16(transOffset+2, false);
+        const dataOffset = ((pkt.getUint8(transOffset+12) >> 4) * 4);
+        const flags = pkt.getUint8(transOffset+13);
+        const payloadOffset = transOffset + dataOffset;
+        const payloadLen = pktBuf.byteLength - payloadOffset;
+
+        const fwd = `${srcIP}:${srcPort}-${dstIP}:${dstPort}`;
+        const rev = `${dstIP}:${dstPort}-${srcIP}:${srcPort}`;
+        const key = tcpStreams[fwd] ? fwd : tcpStreams[rev] ? rev : fwd;
+
+        if(!tcpStreams[key]) {
+          tcpStreams[key] = {
+            id: `sess_${String(Object.keys(tcpStreams).length+1).padStart(3,'0')}`,
+            src: `${srcIP}:${srcPort}`, dst: `${dstIP}:${dstPort}`,
+            srcHost: srcIP, dstHost: dstIP,
+            startTs: ts, lastTs: ts,
+            reqBytes: 0, resBytes: 0,
+            reqPayload: [], resPayload: [],
+            state: 'SYN', flags: [], proto: 'TCP',
+          };
+        }
+
+        const stream = tcpStreams[key];
+        stream.lastTs = ts;
+        const isFwd = key === fwd;
+
+        if(payloadLen > 0 && payloadOffset < pktBuf.byteLength) {
+          const payload = new Uint8Array(pktBuf, payloadOffset, Math.min(payloadLen, pktBuf.byteLength - payloadOffset));
+          if(isFwd) { stream.reqBytes += payload.length; stream.reqPayload.push(payload); }
+          else { stream.resBytes += payload.length; stream.resPayload.push(payload); }
+        }
+
+        if(flags & 0x01) stream.state = 'CLOSED'; // FIN
+        if(flags & 0x04) stream.state = 'CLOSED'; // RST
+        if(flags & 0x02 && !(flags & 0x10)) stream.state = 'SYN';
+        if(flags & 0x10 && stream.state === 'SYN') stream.state = 'ESTABLISHED';
+
+      } else if(proto === 17) { // UDP
+        if(pktBuf.byteLength < transOffset + 8) continue;
+        const srcPort = pkt.getUint16(transOffset, false);
+        const dstPort = pkt.getUint16(transOffset+2, false);
+        const payloadLen = pkt.getUint16(transOffset+4, false) - 8;
+        const payloadOffset = transOffset + 8;
+
+        const key = `${srcIP}:${srcPort}-${dstIP}:${dstPort}`;
+        if(!udpSessions[key]) {
+          udpSessions[key] = {
+            id: `sess_udp_${String(Object.keys(udpSessions).length+1).padStart(3,'0')}`,
+            src: `${srcIP}:${srcPort}`, dst: `${dstIP}:${dstPort}`,
+            srcHost: srcIP, dstHost: dstIP,
+            startTs: ts, lastTs: ts,
+            reqBytes: 0, resBytes: 0,
+            payloads: [], state: 'CLOSED',
+            proto: dstPort === 53 || srcPort === 53 ? 'DNS' : 'UDP',
+            flags: dstPort === 53 || srcPort === 53 ? ['dns'] : [],
+          };
+        }
+        const sess = udpSessions[key];
+        sess.lastTs = ts;
+        sess.reqBytes += Math.max(0, payloadLen);
+        if(payloadLen > 0 && payloadOffset + payloadLen <= pktBuf.byteLength) {
+          sess.payloads.push(new Uint8Array(pktBuf, payloadOffset, payloadLen));
+        }
+      }
+    } catch(e) { continue; }
+  }
+
+  // Convert TCP streams to sessions
+  const results = [];
+
+  Object.values(tcpStreams).forEach(stream => {
+    const req = concatUint8Arrays(stream.reqPayload);
+    const res = concatUint8Arrays(stream.resPayload);
+    const session = buildTcpSession(stream, req, res);
+    results.push(session);
+  });
+
+  // Convert UDP sessions
+  Object.values(udpSessions).forEach(udp => {
+    const session = buildUdpSession(udp);
+    results.push(session);
+  });
+
+  results.sort((a,b) => a.ts - b.ts);
+  return results;
+}
+
+function readIPv4(view, offset) {
+  return `${view.getUint8(offset)}.${view.getUint8(offset+1)}.${view.getUint8(offset+2)}.${view.getUint8(offset+3)}`;
+}
+
+function concatUint8Arrays(arrays) {
+  const total = arrays.reduce((s,a) => s+a.length, 0);
+  const out = new Uint8Array(total);
+  let off = 0;
+  arrays.forEach(a => { out.set(a, off); off += a.length; });
+  return out;
+}
+
+function bytesToAscii(bytes, maxLen=2048) {
+  const slice = bytes.slice(0, maxLen);
+  return Array.from(slice).map(b => b >= 32 && b < 127 ? String.fromCharCode(b) : b===10||b===13?'\n':'.').join('');
+}
+
+function buildTcpSession(stream, reqBytes, resBytes) {
+  const dstPort = parseInt(stream.dst.split(':')[1]);
+  const srcPort = parseInt(stream.src.split(':')[1]);
+
+  // Detect protocol from port
+  let proto = 'TCP';
+  const TLS_PORTS = [443,8443,993,995,465,636];
+  const HTTP_PORTS = [80,8080,8000,8888,3000];
+  const FTP_PORTS = [21,20];
+  const SMTP_PORTS = [25,587,465];
+
+  if(TLS_PORTS.includes(dstPort)||TLS_PORTS.includes(srcPort)) proto='HTTPS';
+  else if(HTTP_PORTS.includes(dstPort)||HTTP_PORTS.includes(srcPort)) proto='HTTP';
+  else if(FTP_PORTS.includes(dstPort)||FTP_PORTS.includes(srcPort)) proto='FTP';
+  else if(SMTP_PORTS.includes(dstPort)||SMTP_PORTS.includes(srcPort)) proto='SMTP';
+
+  const reqText = bytesToAscii(reqBytes);
+  const resText = bytesToAscii(resBytes);
+
+  // Parse HTTP
+  let request = { method:'—', url:'—', version:'TCP', headers:{}, body:'' };
+  let response = { status:0, statusText:'—', headers:{}, body:'' };
+  let tls = null;
+  const flags = [];
+
+  if(proto === 'HTTP' && reqText.length > 4) {
+    const parsed = parseHTTPRequest(reqText);
+    if(parsed) { request = parsed; proto = 'HTTP'; }
+    const parsedRes = parseHTTPResponse(resText);
+    if(parsedRes) response = parsedRes;
+  } else if(proto === 'HTTPS') {
+    tls = { version:'TLS', cipher:'Unknown', sni: stream.dstHost, cert: stream.dstHost };
+    flags.push('tls');
+    request = { method:'CONNECT', url: stream.dst, version:'TLS', headers:{}, body:'' };
+    response = { status:200, statusText:'Tunnel established', headers:{}, body:'' };
+  } else if(proto === 'FTP' && reqText.length > 0) {
+    const lines = reqText.split('\n').map(l=>l.trim()).filter(Boolean);
+    const cmdMap = {};
+    lines.forEach(l => { const p=l.indexOf(' '); if(p>0) cmdMap[l.slice(0,p).toUpperCase()]=l.slice(p+1); else cmdMap[l.toUpperCase()]=''; });
+    request = { method: Object.keys(cmdMap)[0]||'FTP', url: cmdMap['RETR']||cmdMap['STOR']||'/', version:'FTP', headers:cmdMap, body:'' };
+    const resLines = resText.split('\n');
+    const statusLine = resLines.find(l=>/^\d{3}/.test(l))||'';
+    response = { status: parseInt(statusLine)||0, statusText: statusLine.slice(4)||'—', headers:{}, body:'' };
+    if(cmdMap['PASS']) { flags.push('creds'); }
+  } else if(proto === 'SMTP' && reqText.length > 0) {
+    const lines = reqText.split('\n').map(l=>l.trim()).filter(Boolean);
+    const hdrs = {};
+    lines.forEach(l => { const p=l.indexOf(' '); if(p>0) hdrs[l.slice(0,p).toUpperCase()]=l.slice(p+1); });
+    request = { method:'EHLO', url: hdrs['EHLO']||stream.srcHost, version:'SMTP', headers:hdrs, body:'' };
+    response = { status:250, statusText:'OK', headers:{}, body:'' };
+    if(hdrs['AUTH']) flags.push('creds');
+  } else {
+    request = { method:'RAW', url:`${stream.src} → ${stream.dst}`, version:'TCP', headers:{}, body: reqText.slice(0,200) };
+    response = { status:0, statusText:'RAW', headers:{}, body: resText.slice(0,200) };
+  }
+
+  // Detect credentials
+  const auth = request.headers['Authorization'] || request.headers['authorization'] || '';
+  if(auth) flags.push('creds');
+
+  // Build alerts
+  const alerts = detectAlerts(request, response, proto, flags, stream);
+
+  // Hex dump from raw bytes
+  const hexLines = [];
+  const raw = reqBytes.slice(0, 128);
+  for(let i=0;i<raw.length;i+=16) {
+    const chunk = raw.slice(i,i+16);
+    const hex = Array.from(chunk).map(b=>b.toString(16).padStart(2,'0')).join(' ');
+    const ascii = Array.from(chunk).map(b=>b>=32&&b<127?String.fromCharCode(b):'.').join('');
+    hexLines.push({off:i.toString(16).padStart(4,'0'), hex, ascii});
+  }
+
+  return {
+    id: stream.id,
+    proto,
+    ts: stream.startTs,
+    src: stream.src,
+    dst: stream.dst,
+    srcHost: stream.srcHost,
+    dstHost: stream.dstHost,
+    bytes: { req: stream.reqBytes, res: stream.resBytes },
+    duration: Math.round(stream.lastTs - stream.startTs),
+    state: stream.state,
+    flags,
+    request,
+    response,
+    files: [],
+    dns: [],
+    tls,
+    alerts,
+    timeline: buildTimeline(stream, request, response, proto),
+    _hexLines: hexLines,
+  };
+}
+
+function buildUdpSession(udp) {
+  const dnsRecords = [];
+  let request = { method:'QUERY', url:'—', version:'DNS', headers:{}, body:'' };
+  let response = { status:0, statusText:'—', headers:{}, body:'' };
+
+  if(udp.proto === 'DNS' && udp.payloads.length > 0) {
+    try {
+      const dns = parseDNS(udp.payloads[0]);
+      if(dns) {
+        request.url = dns.question || '—';
+        request.headers = { Type: dns.qtype||'A', Class:'IN' };
+        if(dns.answers?.length) {
+          response.status = 0; response.statusText = 'NOERROR';
+          response.headers = { Answer: dns.answers.join(', '), TTL: dns.ttl||'—' };
+          dns.answers.forEach(a => dnsRecords.push({ query:dns.question, type:dns.qtype||'A', answer:a, ts:udp.startTs, ttl:dns.ttl||0 }));
+        }
+      }
+    } catch(e) {}
+  }
+
+  const alerts = [];
+  if(udp.proto === 'DNS' && request.url !== '—') {
+    if(/\.(ru|cn|tk|xyz|top|pw|cc)$/i.test(request.url)) {
+      alerts.push({ sev:'med', title:'Suspicious TLD', desc:`DNS query to potentially suspicious domain: ${request.url}`, icon:'⚠️' });
+    }
+    if(request.url.length > 50) {
+      alerts.push({ sev:'med', title:'Long DNS query', desc:'Unusually long hostname — possible DNS tunneling', icon:'🕵️' });
+    }
+  }
+
+  return {
+    id: udp.id,
+    proto: udp.proto,
+    ts: udp.startTs,
+    src: udp.src,
+    dst: udp.dst,
+    srcHost: udp.srcHost,
+    dstHost: udp.dstHost,
+    bytes: { req: udp.reqBytes, res: 0 },
+    duration: Math.round(udp.lastTs - udp.startTs),
+    state: 'CLOSED',
+    flags: udp.flags,
+    request,
+    response,
+    files: [],
+    dns: dnsRecords,
+    tls: null,
+    alerts,
+    timeline: [{ type:'dns', time:udp.startTs, label:`${udp.proto} query`, detail:request.url }],
+    _hexLines: [],
+  };
+}
+
+function parseHTTPRequest(text) {
+  const lines = text.split('\n');
+  const firstLine = lines[0].trim();
+  const match = firstLine.match(/^([A-Z]+)\s+(\S+)\s+(HTTP\/[\d.]+)/);
+  if(!match) return null;
+  const [,method,url,version] = match;
+  const headers = {};
+  let i = 1;
+  for(; i<lines.length; i++) {
+    const line = lines[i].trim();
+    if(!line) break;
+    const colon = line.indexOf(':');
+    if(colon>0) headers[line.slice(0,colon).trim()] = line.slice(colon+1).trim();
+  }
+  const body = lines.slice(i+1).join('\n').trim().slice(0,500);
+  return { method, url, version, headers, body };
+}
+
+function parseHTTPResponse(text) {
+  const lines = text.split('\n');
+  const firstLine = lines[0].trim();
+  const match = firstLine.match(/^HTTP\/[\d.]+\s+(\d+)\s*(.*)/);
+  if(!match) return null;
+  const [,statusStr,statusText] = match;
+  const status = parseInt(statusStr);
+  const headers = {};
+  let i = 1;
+  for(; i<lines.length; i++) {
+    const line = lines[i].trim();
+    if(!line) break;
+    const colon = line.indexOf(':');
+    if(colon>0) headers[line.slice(0,colon).trim()] = line.slice(colon+1).trim();
+  }
+  const body = lines.slice(i+1).join('\n').trim().slice(0,500);
+  return { status, statusText: statusText||'—', headers, body };
+}
+
+function parseDNS(bytes) {
+  if(bytes.length < 12) return null;
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const flags = view.getUint16(2, false);
+  const qdCount = view.getUint16(4, false);
+  const anCount = view.getUint16(6, false);
+  if(qdCount === 0) return null;
+
+  let offset = 12;
+  let question = '';
+  while(offset < bytes.length) {
+    const len = bytes[offset++];
+    if(len === 0) break;
+    if(question) question += '.';
+    for(let i=0;i<len && offset<bytes.length;i++) question += String.fromCharCode(bytes[offset++]);
+  }
+  const qtype = offset+1 < bytes.length ? view.getUint16(offset, false) : 1;
+  const qtypeStr = {1:'A',28:'AAAA',5:'CNAME',15:'MX',16:'TXT',2:'NS'}[qtype]||'?';
+  offset += 4; // skip qtype + qclass
+
+  const answers = [];
+  let ttl = 0;
+  for(let i=0;i<anCount&&offset+10<bytes.length;i++) {
+    // Skip name (may be pointer)
+    if((bytes[offset]&0xc0)===0xc0) offset+=2;
+    else { while(offset<bytes.length&&bytes[offset]!==0) offset++; offset++; }
+    if(offset+10>bytes.length) break;
+    const atype = view.getUint16(offset, false);
+    offset += 6;
+    ttl = view.getUint32(offset-4, false);
+    const rdLen = view.getUint16(offset, false);
+    offset += 2;
+    if(atype===1 && rdLen===4 && offset+4<=bytes.length) {
+      answers.push(`${bytes[offset]}.${bytes[offset+1]}.${bytes[offset+2]}.${bytes[offset+3]}`);
+    }
+    offset += rdLen;
+  }
+
+  return { question, qtype: qtypeStr, answers, ttl };
+}
+
+function detectAlerts(request, response, proto, flags, stream) {
+  const alerts = [];
+  const auth = request.headers['Authorization']||request.headers['authorization']||'';
+  const dstPort = parseInt(stream.dst.split(':')[1]);
+
+  if(auth.startsWith('Basic ')) alerts.push({sev:'high',title:'HTTP Basic Auth',desc:'Credentials sent in Base64 (not encrypted)',icon:'🔓'});
+  if(auth.startsWith('Bearer ghp_')) alerts.push({sev:'high',title:'GitHub PAT exposed',desc:'GitHub Personal Access Token in Authorization header',icon:'🔑'});
+  else if(auth.startsWith('Bearer ')) alerts.push({sev:'med',title:'Bearer token',desc:'Auth token transmitted in header',icon:'🔑'});
+
+  const pass = request.headers['PASS']||request.headers['pass']||'';
+  if(pass && proto==='FTP') alerts.push({sev:'high',title:'FTP cleartext credentials',desc:`Plaintext password transmitted: ${pass}`,icon:'🔓'});
+
+  const ct = response.headers?.['Content-Type']||'';
+  if(ct.includes('text/html') && response.status===200) {
+    const body = response.body||'';
+    if(/password|passwd|pwd/i.test(body)) alerts.push({sev:'med',title:'Password in response',desc:'Response body may contain password field',icon:'⚠️'});
+  }
+
+  if(proto==='FTP'&&(dstPort===21||dstPort===20)) alerts.push({sev:'high',title:'Unencrypted FTP',desc:'FTP transmits data in plaintext',icon:'🔓'});
+  if(proto==='SMTP'&&dstPort===25) alerts.push({sev:'med',title:'Unencrypted SMTP',desc:'SMTP on port 25 — no TLS',icon:'⚠️'});
+
+  const url = request.url||'';
+  if(/\.(exe|dll|bat|ps1|sh|msi)$/i.test(url)) alerts.push({sev:'med',title:'Executable download',desc:`Executable file requested: ${url}`,icon:'⚠️'});
+
+  ['X-API-Key','x-api-key','X-Auth-Token','x-auth-token'].forEach(k=>{
+    if(request.headers[k]) alerts.push({sev:'high',title:'API key in header',desc:`Key found in ${k}`,icon:'🔑'});
+  });
+
+  return alerts;
+}
+
+function buildTimeline(stream, request, response, proto) {
+  const tl = [];
+  if(proto==='HTTP'||proto==='HTTPS') {
+    tl.push({type:'req',time:stream.startTs,label:`${request.method} ${request.url}`,detail:`${request.version}`});
+    if(response.status) tl.push({type:'res',time:stream.lastTs,label:`${response.status} ${response.statusText}`,detail:`${formatBytes(stream.resBytes)}`});
+  } else if(proto==='FTP') {
+    tl.push({type:'req',time:stream.startTs,label:`FTP ${request.method}`,detail:request.url});
+    if(response.status) tl.push({type:'res',time:stream.lastTs,label:`${response.status} ${response.statusText}`,detail:''});
+  } else if(proto==='SMTP') {
+    tl.push({type:'req',time:stream.startTs,label:'SMTP session',detail:stream.src+' → '+stream.dst});
+  } else {
+    tl.push({type:'req',time:stream.startTs,label:'TCP stream',detail:`${stream.reqBytes} bytes sent`});
+    if(stream.resBytes) tl.push({type:'res',time:stream.lastTs,label:'Response',detail:`${stream.resBytes} bytes received`});
+  }
+  return tl;
 }
 
 function runAnalysis() {
@@ -1189,7 +1630,7 @@ function renderFiles() {
 
 function renderHex() {
   const s=selectedSession;
-  const lines=generateHex(s);
+  const lines=s._hexLines && s._hexLines.length ? s._hexLines : generateHex(s);
   document.getElementById('detail-hex').innerHTML=`
     <div style="font-size:9px;color:var(--text3);letter-spacing:0.08em;margin-bottom:8px;">// FIRST 128 bytes — REASSEMBLED STREAM</div>
     <div class="pv">
