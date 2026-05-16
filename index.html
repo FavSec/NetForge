@@ -1,0 +1,2261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NetForge</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#000000;--bg2:#0a0a0a;--bg3:#111111;--bg4:#1a1a1a;
+  --border:#222222;--border2:#333333;
+  --text:#ffffff;--text2:#aaaaaa;--text3:#555555;
+  --accent:#ffffff;--accent-light:#111111;
+  --red:#ff5555;--red-bg:#1a0000;
+  --green:#55cc55;--green-bg:#001a00;
+  --amber:#ffaa33;--amber-bg:#1a1000;
+  --blue:#5599ff;--blue-bg:#00101a;
+  --purple:#cc77ff;--purple-bg:#0f001a;
+  --sans:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
+}
+@media(prefers-color-scheme:light){
+  :root{
+    --bg:#f9f9f7;--bg2:#ffffff;--bg3:#f2f2ef;--bg4:#e8e8e4;
+    --border:#e0e0db;--border2:#c8c8c2;
+    --text:#1c1c1a;--text2:#5a5a54;--text3:#9a9a92;
+    --accent:#1c1c1a;--accent-light:#efefeb;
+    --red:#b83232;--red-bg:#fef4f4;
+    --green:#2a7a2a;--green-bg:#f2faf2;
+    --amber:#8a6000;--amber-bg:#fefbf0;
+    --blue:#1a52a8;--blue-bg:#f0f4fc;
+    --purple:#5a2a8a;--purple-bg:#f6f0fc;
+  }
+}
+[data-theme="light"]{
+  --bg:#f9f9f7;--bg2:#ffffff;--bg3:#f2f2ef;--bg4:#e8e8e4;
+  --border:#e0e0db;--border2:#c8c8c2;
+  --text:#1c1c1a;--text2:#5a5a54;--text3:#9a9a92;
+  --accent:#1c1c1a;--accent-light:#efefeb;
+  --red:#b83232;--red-bg:#fef4f4;
+  --green:#2a7a2a;--green-bg:#f2faf2;
+  --amber:#8a6000;--amber-bg:#fefbf0;
+  --blue:#1a52a8;--blue-bg:#f0f4fc;
+  --purple:#5a2a8a;--purple-bg:#f6f0fc;
+}
+[data-theme="dark"]{
+  --bg:#000000;--bg2:#0a0a0a;--bg3:#111111;--bg4:#1a1a1a;
+  --border:#222222;--border2:#333333;
+  --text:#ffffff;--text2:#aaaaaa;--text3:#555555;
+  --accent:#ffffff;--accent-light:#111111;
+  --red:#ff5555;--red-bg:#1a0000;
+  --green:#55cc55;--green-bg:#001a00;
+  --amber:#ffaa33;--amber-bg:#1a1000;
+  --blue:#5599ff;--blue-bg:#00101a;
+  --purple:#cc77ff;--purple-bg:#0f001a;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:20px;line-height:1.6;}
+::-webkit-scrollbar{width:3px;}
+
+.net-wrap{height:100%;display:flex;flex-direction:column;}
+.net-toolbar{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0;}
+.net-title-bar{font-size:13px;font-weight:500;color:var(--text);}
+.net-chip{font-size:11px;padding:3px 10px;border:1px solid var(--border);color:var(--text3);cursor:pointer;background:transparent;transition:all .1s;font-family:var(--mono);user-select:none;}
+.net-chip:hover:not(.net-chip-on){border-color:var(--border2);color:var(--text2);}
+.net-chip-on{border-color:var(--text);color:var(--bg);background:var(--text);}
+.net-canvas-wrap{flex:1;position:relative;overflow:hidden;background:var(--bg);}
+#net-canvas{display:block;width:100%;height:100%;}
+.net-legend{position:absolute;bottom:12px;left:16px;display:flex;flex-direction:column;gap:5px;}
+.net-legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text3);font-family:var(--mono);}
+.net-legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.net-info{position:absolute;top:12px;right:16px;background:var(--bg2);border:1px solid var(--border);padding:10px 14px;font-size:12px;min-width:200px;max-width:260px;display:none;}
+.net-info-title{font-weight:500;color:var(--text);margin-bottom:6px;font-size:13px;}
+.net-info-row{display:flex;justify-content:space-between;gap:12px;color:var(--text2);margin-bottom:3px;font-family:var(--mono);font-size:11px;}
+.net-info-row span{color:var(--text);}
+.net-stats{position:absolute;top:12px;left:16px;display:flex;flex-direction:column;gap:4px;}
+.net-stat-pill{background:var(--bg2);border:1px solid var(--border);padding:4px 10px;font-size:11px;color:var(--text3);font-family:var(--mono);}
+.net-stat-pill b{color:var(--text);}
+
+
+.tl-wrap{padding:24px;max-width:1200px;margin:0 auto;}
+.tl-page-title{font-size:20px;font-weight:300;letter-spacing:-0.04em;color:var(--text);margin-bottom:4px;}
+.tl-page-sub{font-size:13px;color:var(--text3);margin-bottom:20px;}
+.tl-controls{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+.tl-control-label{font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text3);}
+.tl-chip{font-size:11px;padding:3px 10px;border:1px solid var(--border);color:var(--text3);cursor:pointer;background:transparent;transition:all .1s;font-family:var(--mono);user-select:none;}
+.tl-chip:hover:not(.tl-chip-on){border-color:var(--border2);color:var(--text2);}
+.tl-chip-on{border-color:var(--text);color:var(--bg);background:var(--text);}
+.tl-chart-wrap{background:var(--bg2);border:1px solid var(--border);margin-bottom:16px;overflow:hidden;}
+.tl-chart-title{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);padding:10px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.tl-chart-scroll{overflow-x:auto;overflow-y:hidden;}
+.tl-chart-scroll::-webkit-scrollbar{height:4px;}
+.tl-chart-scroll::-webkit-scrollbar-thumb{background:var(--border2);}
+#tl-canvas-wrap{position:relative;}
+#tl-canvas{display:block;cursor:crosshair;}
+.tl-tooltip{position:absolute;background:var(--bg3);border:1px solid var(--border2);padding:8px 12px;font-size:12px;pointer-events:none;z-index:100;min-width:180px;line-height:1.6;}
+.tl-tooltip-title{font-weight:500;color:var(--text);margin-bottom:4px;font-size:13px;}
+.tl-tooltip-row{color:var(--text2);font-family:var(--mono);font-size:11px;}
+.tl-tooltip-row span{color:var(--text);}
+.tl-legend{display:flex;gap:16px;padding:10px 16px;border-top:1px solid var(--border);flex-wrap:wrap;}
+.tl-legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text3);cursor:pointer;user-select:none;}
+.tl-legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.tl-sessions-wrap{background:var(--bg2);border:1px solid var(--border);}
+.tl-sessions-title{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);padding:10px 16px;border-bottom:1px solid var(--border);}
+.tl-session-row{display:grid;grid-template-columns:140px 80px 1fr 100px 80px;gap:8px;align-items:center;padding:9px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;font-size:12px;}
+.tl-session-row:last-child{border-bottom:none;}
+.tl-session-row:hover{background:var(--bg3);}
+.tl-session-bar-wrap{height:6px;background:var(--bg4);border-radius:3px;overflow:hidden;position:relative;}
+.tl-session-bar{height:100%;border-radius:3px;position:absolute;left:0;}
+.tl-empty{padding:40px;text-align:center;color:var(--text3);font-size:13px;}
+
+
+.hv-blurred{
+  filter:blur(5px);
+  user-select:none;
+  cursor:pointer;
+  transition:filter 0.3s ease;
+  color:var(--red);
+}
+.hv-blurred:hover{
+  filter:blur(3px);
+}
+.hv-blurred.revealed{
+  filter:none;
+  cursor:default;
+}
+
+
+.hv-wrap{padding:24px;max-width:1100px;margin:0 auto;}
+.hv-title{font-size:20px;font-weight:300;letter-spacing:-0.04em;color:var(--text);margin-bottom:4px;}
+.hv-sub{font-size:13px;color:var(--text3);margin-bottom:20px;}
+.hv-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px;}
+.hv-stat{background:var(--bg2);border:1px solid var(--border);padding:14px;}
+.hv-stat-num{font-size:26px;font-weight:300;color:var(--text);font-family:var(--mono);}
+.hv-stat-num.danger{color:var(--red);}
+.hv-stat-num.warn{color:var(--amber);}
+.hv-stat-num.good{color:var(--green);}
+.hv-stat-lbl{font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);margin-top:2px;}
+.hv-filters{display:flex;gap:6px;margin-bottom:16px;align-items:center;flex-wrap:wrap;}
+.hv-filter-label{font-size:11px;color:var(--text3);margin-right:4px;text-transform:uppercase;letter-spacing:0.06em;}
+.hv-chip{font-size:11px;padding:3px 10px;border:1px solid var(--border);color:var(--text3);cursor:pointer;background:transparent;transition:all .1s;font-family:var(--mono);user-select:none;}
+.hv-chip:hover:not(.hv-chip-on){border-color:var(--border2);color:var(--text2);}
+.hv-chip-on{border-color:var(--text);color:var(--bg);background:var(--text);}
+.hv-chip-danger.hv-chip-on{border-color:var(--red);color:var(--red);background:rgba(255,85,85,0.1);}
+.hv-section{background:var(--bg2);border:1px solid var(--border);margin-bottom:16px;overflow:hidden;}
+.hv-section-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border);cursor:pointer;user-select:none;}
+.hv-section-hdr:hover{background:var(--bg3);}
+.hv-section-title{font-size:12px;font-weight:500;text-transform:uppercase;letter-spacing:0.08em;color:var(--text2);}
+.hv-section-count{font-size:11px;color:var(--text3);font-family:var(--mono);}
+.hv-tbl{width:100%;border-collapse:collapse;}
+.hv-tbl th{text-align:left;padding:8px 16px;border-bottom:1px solid var(--border);font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--text3);background:var(--bg3);}
+.hv-tbl td{padding:9px 16px;border-bottom:1px solid var(--border);font-size:13px;font-family:var(--mono);vertical-align:middle;}
+.hv-tbl tr:last-child td{border-bottom:none;}
+.hv-tbl tr{cursor:pointer;transition:background .1s;}
+.hv-tbl tr:hover td{background:var(--bg3);}
+.hv-badge{display:inline-block;font-size:10px;font-weight:500;padding:2px 7px;border-radius:3px;text-transform:uppercase;letter-spacing:0.05em;}
+.hv-badge-high{background:var(--red-bg);color:var(--red);border:1px solid var(--red);}
+.hv-badge-med{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber);}
+.hv-badge-low{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue);}
+.hv-val{color:var(--red);word-break:break-all;}
+.hv-val-safe{color:var(--text2);}
+.hv-copy{font-size:10px;padding:2px 7px;border:1px solid var(--border);background:transparent;color:var(--text3);cursor:pointer;transition:all .1s;margin-left:6px;vertical-align:middle;}
+.hv-copy:hover{border-color:var(--text);color:var(--text);}
+.hv-empty{padding:30px;text-align:center;color:var(--text3);font-size:13px;}
+.hv-redacted{color:var(--text3);font-style:italic;}
+.hv-reveal{font-size:10px;padding:1px 6px;border:1px solid var(--border);background:transparent;color:var(--text3);cursor:pointer;margin-left:6px;}
+.hv-reveal:hover{border-color:var(--red);color:var(--red);}
+
+
+.hm-wrap{padding:24px;max-width:1100px;margin:0 auto;}
+.hm-title{font-size:24px;font-weight:300;letter-spacing:-0.04em;color:var(--text);margin-bottom:4px;}
+.hm-sub{font-size:16px;color:var(--text3);margin-bottom:20px;}
+.hm-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;}
+.hm-stat{background:var(--bg2);border:1px solid var(--border);padding:14px;border-radius:4px;}
+.hm-stat-num{font-size:30px;font-weight:300;color:var(--text);font-family:var(--mono);}
+.hm-stat-lbl{font-size:14px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);margin-top:2px;}
+.hm-map-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:4px;overflow:hidden;margin-bottom:16px;position:relative;}
+.hm-map-title{font-size:15px;font-weight:500;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);padding:10px 14px;border-bottom:1px solid var(--border);}
+#hm-map{width:100%;height:420px;}
+.hm-legend{display:flex;align-items:center;gap:6px;padding:8px 14px;border-top:1px solid var(--border);font-size:15px;color:var(--text3);}
+.hm-leg-bar{display:flex;gap:0;height:8px;width:120px;border-radius:2px;overflow:hidden;}
+.hm-leg-seg{flex:1;}
+.hm-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.hm-table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:4px;overflow:hidden;}
+.hm-table-title{font-size:15px;font-weight:500;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);padding:10px 14px;border-bottom:1px solid var(--border);}
+.hm-tbl{width:100%;border-collapse:collapse;font-size:16px;}
+.hm-tbl th{text-align:left;padding:6px 14px;border-bottom:1px solid var(--border);font-size:14px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--text3);}
+.hm-tbl td{padding:7px 14px;border-bottom:1px solid var(--border);color:var(--text);font-family:var(--mono);}
+.hm-tbl tr:last-child td{border-bottom:none;}
+.hm-tbl tr:hover td{background:var(--bg3);}
+.hm-bar{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:3px;}
+.hm-bar-fill{height:100%;border-radius:2px;background:var(--blue);}
+.hm-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px;vertical-align:middle;}
+.hm-empty{padding:40px;text-align:center;color:var(--text3);font-size:16px;}
+
+::-webkit-scrollbar-thumb{background:var(--border2);}
+
+#app{display:grid;grid-template-rows:56px 1fr;height:100vh;}
+.main-grid{display:grid;grid-template-columns:260px 1fr 280px;height:100%;overflow:hidden;}
+
+.topbar{display:flex;align-items:center;padding:0 24px;border-bottom:1px solid var(--border);background:var(--bg);}
+.tb-logo{display:flex;align-items:center;gap:8px;margin-right:40px;}
+.tb-title{font-size:18px;font-weight:600;letter-spacing:-0.03em;color:var(--text);}
+.tb-title span{opacity:0.4;}
+.tb-nav{display:flex;gap:0;}
+.tb-btn{font-family:var(--sans);font-size:16px;font-weight:500;padding:6px 14px;border:none;background:transparent;color:var(--text3);cursor:pointer;transition:all .1s;border-bottom:2px solid transparent;margin-bottom:-1px;}
+.tb-btn:hover{color:var(--text);}
+.tb-btn.active{color:var(--text);border-bottom-color:var(--text);}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:16px;}
+.tb-stat{font-size:15px;color:var(--text3);}
+.tb-stat b{color:var(--text);font-weight:500;}
+.tb-clock{font-family:var(--mono);font-size:15px;color:var(--text3);}
+
+.left-panel{background:var(--bg);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.panel-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--border);}
+.panel-hdr-title{font-size:15px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;color:var(--text3);}
+.panel-hdr-count{font-size:15px;color:var(--text3);}
+
+.drop-zone{margin:12px;border:1px dashed var(--border2);padding:20px 12px;text-align:center;cursor:pointer;transition:all .2s;position:relative;}
+.drop-zone:hover,.drop-zone.drag-over{border-color:var(--text);background:var(--bg2);}
+.drop-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.drop-icon{font-size:22px;margin-bottom:6px;opacity:0.5;}
+.drop-text{font-size:15px;color:var(--text2);}
+.drop-text strong{color:var(--text);display:block;font-weight:500;margin-bottom:2px;}
+.fmt-row{display:flex;gap:4px;justify-content:center;margin-top:6px;}
+.fmt{font-size:14px;padding:1px 5px;color:var(--text3);border:1px solid var(--border);}
+.demo-btn{display:block;width:calc(100% - 24px);margin:0 12px 12px;padding:7px;border:1px solid var(--border);background:transparent;color:var(--text2);font-family:var(--sans);font-size:16px;cursor:pointer;transition:all .1s;}
+.demo-btn:hover{border-color:var(--text);color:var(--text);}
+
+.filter-wrap{padding:8px 12px;border-bottom:1px solid var(--border);}
+.filter-input{width:100%;background:transparent;border:none;border-bottom:1px solid var(--border);padding:5px 0;color:var(--text);font-family:var(--sans);font-size:16px;outline:none;}
+.filter-input:focus{border-bottom-color:var(--text);}
+.filter-input::placeholder{color:var(--text3);}
+.proto-row{display:flex;gap:4px;flex-wrap:wrap;margin-top:8px;}
+.proto-btn{font-family:var(--sans);font-size:14px;padding:2px 8px;border:1px solid var(--border);background:transparent;color:var(--text3);cursor:pointer;transition:all .1s;user-select:none;}
+.proto-btn.on{border-color:var(--text);color:var(--bg);background:var(--text);}
+.proto-btn:hover:not(.on){color:var(--text);border-color:var(--border2);}
+
+.sess-list{flex:1;overflow-y:auto;padding:8px;}
+.sess-item{padding:10px 8px;margin-bottom:1px;cursor:pointer;border-left:2px solid transparent;padding-left:10px;transition:all .1s;}
+.sess-item:hover{background:var(--bg2);border-left-color:var(--border2);}
+.sess-item.sel{background:var(--bg2);border-left-color:var(--text);}
+.si-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+.si-proto{font-family:var(--mono);font-size:13px;font-weight:500;padding:1px 5px;letter-spacing:0.04em;}
+.proto-HTTP{background:var(--green-bg);color:var(--green);}
+.proto-HTTPS{background:var(--blue-bg);color:var(--blue);}
+.proto-DNS{background:var(--amber-bg);color:var(--amber);}
+.proto-FTP{background:var(--red-bg);color:var(--red);}
+.proto-SMTP{background:var(--purple-bg);color:var(--purple);}
+.proto-TCP{background:var(--bg3);color:var(--text3);}
+.si-time{font-size:14px;color:var(--text3);font-family:var(--mono);}
+.si-hosts{font-size:16px;color:var(--text);margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.si-bottom{display:flex;justify-content:space-between;}
+.si-bytes{font-size:14px;color:var(--text3);font-family:var(--mono);}
+.si-flags{display:flex;gap:3px;}
+.si-flag{font-size:13px;color:var(--text3);}
+.flag-creds{color:var(--red);}
+
+.center-panel{display:flex;flex-direction:column;overflow:hidden;background:var(--bg);}
+.cmdbar{display:flex;align-items:center;gap:8px;padding:8px 16px;border-bottom:1px solid var(--border);background:var(--bg);}
+.cmd-btn{font-family:var(--sans);font-size:15px;padding:5px 12px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;transition:all .1s;}
+.cmd-btn:hover{border-color:var(--text);color:var(--text);}
+.cmd-btn.primary{border-color:var(--text);background:var(--text);color:var(--bg);}
+.cmd-btn.primary:hover{opacity:0.8;}
+.cmd-btn:disabled{opacity:0.3;cursor:not-allowed;}
+.cmd-sep{width:1px;height:16px;background:var(--border);}
+.cmd-stat{font-size:15px;color:var(--text3);}
+.cmd-stat b{color:var(--text);}
+.cmd-space{flex:1;}
+
+.dtabs{display:flex;border-bottom:1px solid var(--border);}
+.dtab{font-family:var(--sans);font-size:15px;font-weight:500;padding:10px 16px;border:none;background:transparent;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .1s;letter-spacing:0.02em;}
+.dtab.on{color:var(--text);border-bottom-color:var(--text);}
+.dtab:hover:not(.on){color:var(--text2);}
+.dcontent{flex:1;overflow-y:auto;padding:20px;}
+
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:8px;text-align:center;width:100%;color:var(--text3);}
+.empty-title{font-size:18px;font-weight:500;color:var(--text2);}
+.empty-sub{font-size:16px;color:var(--text3);max-width:220px;}
+
+.card{border:1px solid var(--border);padding:16px;margin-bottom:12px;}
+.card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;}
+.card-title{font-size:16px;font-weight:500;letter-spacing:0.02em;color:var(--text);}
+.badges{display:flex;gap:5px;}
+.badge{font-size:14px;padding:2px 7px;font-family:var(--mono);}
+.badge-blue{background:var(--blue-bg);color:var(--blue);}
+.badge-green{background:var(--green-bg);color:var(--green);}
+.badge-amber{background:var(--amber-bg);color:var(--amber);}
+.badge-red{background:var(--red-bg);color:var(--red);}
+.badge-purple{background:var(--purple-bg);color:var(--purple);}
+.badge-info{background:var(--blue-bg);color:var(--blue);}
+.badge-ok{background:var(--green-bg);color:var(--green);}
+.badge-warn{background:var(--amber-bg);color:var(--amber);}
+.badge-danger{background:var(--red-bg);color:var(--red);}
+.ov-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+.ov-field{}
+.ov-label{font-size:13px;font-weight:500;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);margin-bottom:3px;}
+.ov-val{font-size:15px;color:var(--text);font-family:var(--mono);}
+.ov-val.accent{color:var(--blue);}
+.ov-val.bright{color:var(--text);}
+.ov-val.dim{color:var(--text2);}
+.ov-val.danger{color:var(--red);}
+.ov-val.good{color:var(--green);}
+.ov-id{font-size:15px;font-weight:500;font-family:var(--mono);color:var(--text);}
+.ov-banner{border:1px solid var(--border);padding:14px;margin-bottom:12px;}
+.ov-banner-top{display:flex;justify-content:space-between;margin-bottom:12px;}
+.ov-badges{display:flex;gap:5px;}
+
+.section{margin-bottom:16px;}
+.section-hdr{font-size:13px;font-weight:500;text-transform:uppercase;letter-spacing:0.1em;color:var(--text3);padding-bottom:6px;border-bottom:1px solid var(--border);margin-bottom:8px;}
+.kv-grid{display:grid;grid-template-columns:140px 1fr;gap:1px 10px;}
+.kv-key{font-size:15px;color:var(--text3);padding:3px 0;font-family:var(--mono);}
+.kv-val{font-size:15px;color:var(--text);padding:3px 0;font-family:var(--mono);word-break:break-all;}
+.kv-val.danger{color:var(--red);}
+.kv-val.good{color:var(--green);}
+.kv-val.hi{color:var(--text);}
+.kv-val.dim{color:var(--text2);}
+
+.pv{border:1px solid var(--border);margin-bottom:10px;}
+.pv-hdr{display:flex;justify-content:space-between;padding:6px 10px;background:var(--bg2);border-bottom:1px solid var(--border);}
+.pv-hdr-label{font-size:14px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;color:var(--text3);}
+.pv-dir{font-size:13px;font-family:var(--mono);padding:1px 6px;}
+.dir-req{background:var(--amber-bg);color:var(--amber);}
+.dir-res{background:var(--green-bg);color:var(--green);}
+.pv-body{padding:12px;font-family:var(--mono);font-size:15px;line-height:1.8;color:var(--text2);max-height:200px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;}
+.pk{color:var(--blue);}
+.pv2{color:var(--text);}
+.pm{color:var(--amber);font-weight:500;}
+.ps-ok{color:var(--green);}
+.ps-err{color:var(--red);}
+.pdanger{color:var(--red);}
+
+.files-tbl{width:100%;border-collapse:collapse;}
+.files-tbl th{font-size:13px;font-weight:500;text-transform:uppercase;letter-spacing:0.08em;text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--text3);}
+.files-tbl td{padding:8px 8px;border-bottom:1px solid var(--border);font-size:15px;}
+.files-tbl tr.clickable{cursor:pointer;}
+.files-tbl tr.clickable:hover td{background:var(--bg2);}
+.file-name-cell{display:flex;align-items:center;gap:6px;}
+.file-ico{font-size:18px;}
+.file-nm{color:var(--text);font-size:16px;}
+.files-tbl tr.clickable:hover .file-nm{color:var(--blue);}
+.file-mime{color:var(--text3);font-size:14px;font-family:var(--mono);}
+.file-sz{color:var(--text2);font-family:var(--mono);font-size:15px;}
+.ent-bar{width:48px;height:3px;background:var(--bg3);display:inline-block;vertical-align:middle;margin-right:4px;overflow:hidden;}
+.ent-fill{height:100%;}
+.ent-val{font-size:14px;font-family:var(--mono);}
+.file-hash{color:var(--text3);font-size:14px;font-family:var(--mono);}
+.act-btn{font-size:14px;padding:2px 8px;border:1px solid var(--border);background:transparent;color:var(--text3);cursor:pointer;transition:all .1s;}
+.act-btn:hover{border-color:var(--text);color:var(--text);}
+
+.hex-grid{display:grid;grid-template-columns:58px 1fr 140px;gap:0 14px;font-size:15px;line-height:1.9;font-family:var(--mono);}
+.hex-off{color:var(--text3);}
+.hex-b{color:var(--text2);}
+.hex-a{color:var(--text3);}
+.hex-p{color:var(--blue);}
+
+.right-panel{border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;background:var(--bg);}
+.rp-tabs{display:flex;border-bottom:1px solid var(--border);}
+.rp-tab{flex:1;font-size:14px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;padding:9px 4px;border:none;background:transparent;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .1s;text-align:center;}
+.rp-tab.on{color:var(--text);border-bottom-color:var(--text);}
+.rp-body{flex:1;overflow-y:auto;padding:12px;}
+
+.tl-item{padding:7px 0 7px 14px;border-left:1px solid var(--border);margin-left:4px;position:relative;margin-bottom:2px;}
+.tl-item::before{content:'';position:absolute;left:-4px;top:12px;width:6px;height:6px;border-radius:50%;background:var(--bg);border:1px solid var(--border2);}
+.tl-req::before{border-color:var(--amber);}
+.tl-res::before{border-color:var(--green);}
+.tl-file::before{border-color:var(--purple);}
+.tl-dns::before{border-color:var(--blue);}
+.tl-tls::before{border-color:var(--blue);}
+.tl-time{font-size:14px;color:var(--text3);margin-bottom:2px;font-family:var(--mono);}
+.tl-label{font-size:16px;color:var(--text);margin-bottom:1px;}
+.tl-detail{font-size:14px;color:var(--text2);font-family:var(--mono);}
+
+.al-item{padding:10px 12px;margin-bottom:6px;border-bottom:1px solid var(--border);}
+.al-sev{font-size:13px;font-weight:500;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:2px;}
+.al-high .al-sev{color:var(--red);}
+.al-med .al-sev{color:var(--amber);}
+.al-low .al-sev{color:var(--blue);}
+.al-title{font-size:16px;color:var(--text);margin-bottom:2px;}
+.al-desc{font-size:15px;color:var(--text2);}
+
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;margin-bottom:20px;border:1px solid var(--border);}
+.stat-box{padding:16px;background:var(--bg);}
+.stat-num{font-size:36px;font-weight:300;color:var(--text);font-family:var(--mono);letter-spacing:-0.03em;opacity:0.9;}
+.stat-lbl{font-size:14px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);margin-top:2px;}
+.stat-sub{font-size:15px;color:var(--red);margin-top:2px;}
+.db-section-title{font-size:14px;font-weight:500;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);margin:16px 0 6px;}
+.db-section-title:first-child{margin-top:0;}
+.db-tbl{width:100%;border-collapse:collapse;font-size:15px;font-family:var(--mono);}
+.db-tbl th{text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);font-size:13px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;color:var(--text3);}
+.db-tbl td{padding:5px 8px;border-bottom:1px solid var(--border);color:var(--text);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.db-tbl tr:hover td{background:var(--bg2);}
+
+.search-wrap{max-width:620px;margin:0 auto;padding:32px 20px;}
+.search-hdr{font-size:26px;font-weight:300;color:var(--text);margin-bottom:4px;letter-spacing:-0.04em;}
+.search-sub{font-size:16px;color:var(--text3);margin-bottom:20px;}
+.search-row{display:flex;gap:0;margin-bottom:10px;border:1px solid var(--border);border-radius:4px;overflow:hidden;}
+.search-inp{flex:1;background:transparent;border:none;padding:10px 14px;color:var(--text);font-family:var(--sans);font-size:17px;outline:none;}
+.search-inp::placeholder{color:var(--text3);}
+.search-go{font-family:var(--sans);font-size:16px;font-weight:500;padding:10px 18px;border:none;border-left:1px solid var(--border);background:var(--text);color:var(--bg);cursor:pointer;letter-spacing:0.03em;}
+.search-go:hover{opacity:0.8;}
+.quick-tags{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:20px;}
+.qtag{font-size:15px;padding:3px 10px;border:1px solid var(--border);color:var(--text3);cursor:pointer;background:transparent;transition:all .1s;font-family:var(--mono);}
+.qtag:hover{border-color:var(--text);color:var(--text);}
+.result-card{border-bottom:1px solid var(--border);padding:12px 0;cursor:pointer;transition:all .1s;}
+.result-card:hover .rc-host{color:var(--blue);}
+.rc-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+.rc-proto{font-family:var(--mono);font-size:14px;color:var(--text3);}
+.rc-score{font-size:14px;color:var(--text3);}
+.rc-host{font-size:17px;color:var(--text);margin-bottom:4px;}
+.rc-body{font-size:15px;color:var(--text2);font-family:var(--mono);}
+.match{color:var(--blue);}
+
+.progress-wrap{position:fixed;bottom:20px;right:20px;background:var(--bg);border:1px solid var(--border);padding:12px 16px;min-width:260px;z-index:1000;}
+.progress-title{font-size:15px;color:var(--text);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.progress-bar-bg{background:var(--bg3);height:2px;overflow:hidden;margin-bottom:6px;}
+.progress-bar{height:100%;background:var(--text);transition:width .3s;}
+.progress-detail{font-size:14px;color:var(--text3);font-family:var(--mono);}
+
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:500;display:flex;align-items:center;justify-content:center;}
+.modal{background:var(--bg);border:1px solid var(--border);width:780px;max-width:94vw;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;}
+.modal-hdr{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border);}
+.modal-ico{font-size:22px;}
+.modal-fname{font-size:17px;font-weight:500;color:var(--text);margin-bottom:2px;}
+.modal-fmeta{font-size:15px;color:var(--text3);display:flex;gap:12px;font-family:var(--mono);}
+.modal-close{margin-left:auto;width:28px;height:28px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;}
+.modal-close:hover{background:var(--red-bg);border-color:var(--red);color:var(--red);}
+.modal-tabs{display:flex;border-bottom:1px solid var(--border);padding:0 18px;}
+.modal-tab{font-family:var(--sans);font-size:15px;font-weight:500;padding:8px 14px;border:none;background:transparent;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .1s;letter-spacing:0.03em;}
+.modal-tab.on{color:var(--text);border-bottom-color:var(--text);}
+.modal-pane{flex:1;overflow-y:auto;padding:16px 18px;display:none;}
+.modal-pane.on{display:block;}
+.modal-footer{display:flex;justify-content:space-between;align-items:center;padding:10px 18px;border-top:1px solid var(--border);}
+.modal-footer-meta{font-size:14px;color:var(--text3);display:flex;gap:14px;font-family:var(--mono);}
+
+.pdf-page{border-bottom:1px solid var(--border);padding:16px 0;margin-bottom:8px;}
+.pdf-pg-num{font-size:13px;font-weight:500;text-transform:uppercase;letter-spacing:0.1em;color:var(--text3);margin-bottom:6px;}
+.pdf-heading{font-size:18px;font-weight:500;color:var(--text);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+.pdf-body{font-size:16px;color:var(--text2);line-height:1.8;}
+.pdf-tbl{width:100%;border-collapse:collapse;margin:8px 0;font-size:15px;}
+.pdf-tbl th{text-align:left;padding:5px 8px;border-bottom:1px solid var(--border);font-weight:500;color:var(--text3);font-size:14px;}
+.pdf-tbl td{padding:5px 8px;border-bottom:1px solid var(--border);color:var(--text);font-family:var(--mono);}
+.csv-warn{font-size:15px;color:var(--amber);padding:8px 12px;border-left:3px solid var(--amber);margin-bottom:10px;background:var(--amber-bg);}
+.csv-tbl{width:100%;border-collapse:collapse;font-size:15px;font-family:var(--mono);}
+.csv-tbl th{text-align:left;padding:5px 8px;border-bottom:1px solid var(--border);font-weight:500;color:var(--text3);position:sticky;top:0;background:var(--bg);font-size:14px;}
+.csv-tbl td{padding:4px 8px;border-bottom:1px solid var(--border);color:var(--text);}
+.csv-tbl td.pii{color:var(--red);}
+.csv-tbl tr:nth-child(even) td{background:var(--bg2);}
+.str-line{display:flex;gap:12px;padding:3px 0;border-bottom:1px solid var(--border);font-size:15px;font-family:var(--mono);}
+.str-off{color:var(--text3);min-width:58px;}
+.str-v{color:var(--text);}
+.str-url{color:var(--blue);}
+.str-email{color:var(--amber);}
+.str-ip{color:var(--green);}
+.str-cred{color:var(--red);}
+.hash-ent-bar{height:4px;background:var(--bg3);overflow:hidden;border-bottom:1px solid var(--border);margin:8px 0;}
+.hash-ent-fill{height:100%;}
+
+.hidden{display:none!important;}
+.tab-panel{display:none;}
+.tab-panel.active{display:grid;}
+#tab-database.active{display:block;overflow-y:auto;height:calc(100vh - 56px);}
+#tab-heatmap.active{display:block;overflow-y:auto;height:calc(100vh - 56px);}
+#tab-harvester.active{display:block;overflow-y:auto;height:calc(100vh - 56px);}
+#tab-timeline.active{display:block;overflow-y:auto;height:calc(100vh - 56px);}
+#tab-search.active{display:flex;justify-content:center;overflow-y:auto;height:calc(100vh - 48px);}
+</style>
+</head>
+<body>
+<div id="app">
+<div class="topbar">
+  <div class="tb-logo">
+    <span class="tb-title">NetForge<span> / Session Analyst</span></span>
+  </div>
+  <div class="tb-nav">
+    <button class="tb-btn active" onclick="switchTab('capture')">Capture</button>
+    <button class="tb-btn" onclick="switchTab('database')">Database</button>
+    <button class="tb-btn" onclick="switchTab('search')">Search</button>
+    <button class="tb-btn" onclick="switchTab('heatmap')">Heatmap</button>
+    <button class="tb-btn" onclick="switchTab('harvester')">Harvester</button>
+    <button class="tb-btn" onclick="switchTab('timeline')">Network</button>
+  </div>
+  <div class="tb-right">
+    <button onclick="toggleTheme()" id="theme-btn" style="font-family:var(--sans);font-size:11px;padding:3px 10px;border:1px solid var(--border);background:transparent;color:var(--text3);cursor:pointer;border-radius:3px;transition:all .1s;" title="Toggle light/dark mode">🌙</button>
+    <span class="tb-stat">Sessions <b id="stat-sessions">0</b></span>
+    <span class="tb-stat">Files <b id="stat-files">0</b></span>
+    <span class="tb-stat">Alerts <b id="stat-alerts" style="color:var(--red)">0</b></span>
+    <span class="tb-clock" id="clock">--:--:--</span>
+  </div>
+</div>
+
+<div id="tab-capture" class="main-grid tab-panel active">
+  <div class="left-panel">
+    <div class="panel-hdr"><span class="panel-hdr-title">Sessions</span><span class="panel-hdr-count" id="sess-count">0</span></div>
+    <div class="drop-zone" id="drop-zone">
+      <input type="file" accept=".pcap,.pcapng,.cap,.log" multiple id="file-input" onchange="handleFileUpload(this.files)">
+      <div class="drop-icon">📡</div>
+      <div class="drop-text"><strong>Drop capture file</strong>or click to browse</div>
+      <div class="fmt-row"><span class="fmt">.pcap</span><span class="fmt">.pcapng</span><span class="fmt">.cap</span></div>
+    </div>
+    <button class="demo-btn" onclick="loadDemoData()">⚡ Load demo capture</button>
+    <div class="filter-wrap">
+      <input class="filter-input" type="text" placeholder="Filter sessions..." id="filter-input" oninput="applyFilter()">
+      <div class="proto-row">
+        <button class="proto-btn" onclick="toggleProtoFilter(this,'HTTP')">HTTP</button>
+        <button class="proto-btn" onclick="toggleProtoFilter(this,'HTTPS')">TLS</button>
+        <button class="proto-btn" onclick="toggleProtoFilter(this,'DNS')">DNS</button>
+        <button class="proto-btn" onclick="toggleProtoFilter(this,'FTP')">FTP</button>
+        <button class="proto-btn" onclick="toggleProtoFilter(this,'SMTP')">SMTP</button>
+        <button class="proto-btn proto-clear" onclick="clearProtoFilters()" style="color:var(--text3);font-size:9px;padding:2px 6px;opacity:0.6;" id="proto-clear-btn">clear</button>
+      </div>
+    </div>
+    <div class="sess-list" id="sessions-list"><div style="padding:20px;text-align:center;color:var(--text3);font-size:12px;">Load a capture file</div></div>
+  </div>
+
+  <div class="center-panel">
+    <div class="cmdbar">
+      <button class="cmd-btn primary" id="run-btn" onclick="runAnalysis()" disabled>Reassemble all</button>
+      <button class="cmd-btn" id="export-btn" onclick="exportData()" disabled>Export JSON</button>
+      <div class="cmd-sep"></div>
+      <div class="cmd-space"></div>
+      <button class="cmd-btn" onclick="clearAll()">Clear</button>
+    </div>
+    <div id="empty-detail" style="flex:1;display:flex;">
+      <div class="empty">
+        <div class="empty-title">NetForge / Session Analyst</div>
+        <div class="empty-sub">Load a capture file and select a session to begin</div>
+      </div>
+    </div>
+    <div id="session-detail" class="hidden" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+      <div class="dtabs">
+        <button class="dtab on" onclick="switchDetailTab('overview')">Overview</button>
+        <button class="dtab" onclick="switchDetailTab('payload')">Payload</button>
+        <button class="dtab" onclick="switchDetailTab('files')">Files</button>
+        <button class="dtab" onclick="switchDetailTab('hex')">Hex dump</button>
+      </div>
+      <div class="dcontent" id="detail-overview"></div>
+      <div class="dcontent hidden" id="detail-payload"></div>
+      <div class="dcontent hidden" id="detail-files"></div>
+      <div class="dcontent hidden" id="detail-hex"></div>
+    </div>
+  </div>
+
+  <div class="right-panel">
+    <div class="rp-tabs">
+      <button class="rp-tab on" onclick="switchRp('timeline',this)">Timeline</button>
+      <button class="rp-tab" onclick="switchRp('alerts',this)">Alerts</button>
+      <button class="rp-tab" onclick="switchRp('dns',this)">DNS</button>
+    </div>
+    <div class="rp-body" id="rp-body"><div style="padding:20px;text-align:center;color:var(--text3);font-size:12px;">Select a session</div></div>
+  </div>
+</div>
+
+<div id="tab-database" class="tab-panel">
+  <div style="padding:24px;max-width:1100px;margin:0 auto;">
+    <div style="font-size:20px;font-weight:300;letter-spacing:-0.04em;color:var(--text);margin-bottom:18px;">Database</div>
+    <div class="stat-grid">
+      <div class="stat-box"><div class="stat-num" id="db-stat-sessions">0</div><div class="stat-lbl">Sessions indexed</div></div>
+      <div class="stat-box"><div class="stat-num" id="db-stat-files">0</div><div class="stat-lbl">Files extracted</div></div>
+      <div class="stat-box"><div class="stat-num" id="db-stat-hosts">0</div><div class="stat-lbl">Unique hosts</div></div>
+      <div class="stat-box"><div class="stat-num" id="db-stat-alerts">0</div><div class="stat-lbl">Alerts raised</div><div class="stat-sub" id="db-stat-high"></div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div><div class="db-section-title">Sessions</div><div id="db-sessions-table"><div style="padding:20px;text-align:center;color:var(--text3);font-size:12px;">—</div></div></div>
+      <div><div class="db-section-title">Extracted files</div><div id="db-files-table"><div style="padding:20px;text-align:center;color:var(--text3);font-size:12px;">—</div></div></div>
+      <div><div class="db-section-title">DNS queries</div><div id="db-dns-table"><div style="padding:20px;text-align:center;color:var(--text3);font-size:12px;">—</div></div></div>
+      <div><div class="db-section-title">Alerts</div><div id="db-alerts-table"><div style="padding:20px;text-align:center;color:var(--text3);font-size:12px;">—</div></div></div>
+    </div>
+  </div>
+</div>
+
+<div id="tab-search" class="tab-panel">
+  <div class="search-wrap">
+    <div class="search-hdr">Search</div>
+    <div class="search-sub">Query sessions, files, hosts, credentials, and metadata</div>
+    <div class="search-row">
+      <input class="search-inp" type="text" id="search-query" placeholder="Authorization, PDF, 192.168, credential..." oninput="doSearch()" onkeydown="if(event.key==='Enter')doSearch()">
+      <button class="search-go" onclick="doSearch()">Search</button>
+    </div>
+    <div class="quick-tags" id="search-tags"></div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:12px;" id="search-active-label"></div>
+    <div id="search-results"></div>
+  </div>
+</div>
+
+<div id="tab-heatmap" class="tab-panel" style="height:calc(100vh - 56px);overflow-y:auto;">
+  <div class="hm-wrap">
+    <div class="hm-title">Geographic traffic map</div>
+    <div class="hm-sub">Origin and destination of captured network sessions</div>
+    <div class="hm-stats">
+      <div class="hm-stat"><div class="hm-stat-num" id="hm-countries">0</div><div class="hm-stat-lbl">Countries</div></div>
+      <div class="hm-stat"><div class="hm-stat-num" id="hm-domestic">0</div><div class="hm-stat-lbl">Domestic</div></div>
+      <div class="hm-stat"><div class="hm-stat-num" id="hm-foreign">0</div><div class="hm-stat-lbl">Foreign</div></div>
+      <div class="hm-stat"><div class="hm-stat-num" id="hm-suspicious">0</div><div class="hm-stat-lbl">Flagged IPs</div></div>
+    </div>
+    <div class="hm-map-wrap">
+      <div class="hm-map-title">Session origins — world map</div>
+      <div id="hm-map"></div>
+      <div class="hm-legend">
+        <span>Low</span>
+        <div class="hm-leg-bar">
+          <div class="hm-leg-seg" style="background:#102030;"></div>
+          <div class="hm-leg-seg" style="background:#1a3050;"></div>
+          <div class="hm-leg-seg" style="background:#2a4a6a;"></div>
+          <div class="hm-leg-seg" style="background:#3a6a96;"></div>
+          <div class="hm-leg-seg" style="background:#4a8ac0;"></div>
+        </div>
+        <span>High</span>
+        <span style="margin-left:16px;color:var(--red);">● Flagged</span>
+      </div>
+    </div>
+    <div class="hm-grid">
+      <div class="hm-table-wrap">
+        <div class="hm-table-title">Top source countries</div>
+        <table class="hm-tbl" id="hm-country-tbl">
+          <thead><tr><th>Country</th><th>Sessions</th><th>Volume</th></tr></thead>
+          <tbody><tr><td colspan="3" style="padding:20px;text-align:center;color:var(--text3);">Load a capture file</td></tr></tbody>
+        </table>
+      </div>
+      <div class="hm-table-wrap">
+        <div class="hm-table-title">Connection log</div>
+        <table class="hm-tbl" id="hm-conn-tbl">
+          <thead><tr><th>IP</th><th>Location</th><th>Sessions</th><th>Risk</th></tr></thead>
+          <tbody><tr><td colspan="4" style="padding:20px;text-align:center;color:var(--text3);">Load a capture file</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="tab-harvester" class="tab-panel" style="height:calc(100vh - 56px);overflow-y:auto;">
+  <div class="hv-wrap">
+    <div class="hv-title">Credential harvester</div>
+    <div class="hv-sub">All credentials, tokens, and secrets extracted across every session</div>
+    <div class="hv-stats">
+      <div class="hv-stat"><div class="hv-stat-num danger" id="hv-total">0</div><div class="hv-stat-lbl">Total found</div></div>
+      <div class="hv-stat"><div class="hv-stat-num danger" id="hv-passwords">0</div><div class="hv-stat-lbl">Passwords</div></div>
+      <div class="hv-stat"><div class="hv-stat-num warn" id="hv-tokens">0</div><div class="hv-stat-lbl">Tokens</div></div>
+      <div class="hv-stat"><div class="hv-stat-num warn" id="hv-basic">0</div><div class="hv-stat-lbl">Basic auth</div></div>
+      <div class="hv-stat"><div class="hv-stat-num good" id="hv-sessions-clean">0</div><div class="hv-stat-lbl">Clean sessions</div></div>
+    </div>
+    <div class="hv-filters">
+      <span class="hv-filter-label">Filter:</span>
+      <button class="hv-chip hv-chip-on" id="hvf-all" onclick="toggleHvFilter(this,'all')">All</button>
+      <button class="hv-chip" id="hvf-password" onclick="toggleHvFilter(this,'password')">Passwords</button>
+      <button class="hv-chip" id="hvf-token" onclick="toggleHvFilter(this,'token')">Tokens</button>
+      <button class="hv-chip" id="hvf-basic" onclick="toggleHvFilter(this,'basic')">Basic auth</button>
+      <button class="hv-chip" id="hvf-cookie" onclick="toggleHvFilter(this,'cookie')">Cookies</button>
+      <button class="hv-chip" id="hvf-key" onclick="toggleHvFilter(this,'key')">API keys</button>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
+        <span style="font-size:12px;color:var(--text3);">Redact values</span>
+        <input type="checkbox" id="hv-redact" onchange="renderHarvester()" style="cursor:pointer;">
+      </div>
+    </div>
+    <div id="hv-content">
+      <div class="hv-empty">Load a capture file to begin harvesting credentials</div>
+    </div>
+  </div>
+</div>
+
+
+<div id="tab-timeline" class="tab-panel" style="height:calc(100vh - 56px);">
+  <div class="net-wrap">
+    <div class="net-toolbar">
+      <span class="net-title-bar">Network topology</span>
+      <button class="net-chip net-chip-on" id="nf-HTTP" onclick="toggleNetProto(this,'HTTP')">HTTP</button>
+      <button class="net-chip net-chip-on" id="nf-HTTPS" onclick="toggleNetProto(this,'HTTPS')">TLS</button>
+      <button class="net-chip net-chip-on" id="nf-DNS" onclick="toggleNetProto(this,'DNS')">DNS</button>
+      <button class="net-chip net-chip-on" id="nf-FTP" onclick="toggleNetProto(this,'FTP')">FTP</button>
+      <button class="net-chip net-chip-on" id="nf-SMTP" onclick="toggleNetProto(this,'SMTP')">SMTP</button>
+      <div style="margin-left:auto;display:flex;gap:8px;">
+        <button class="net-chip" onclick="netPause()" id="net-pause-btn">⏸ Pause</button>
+        <button class="net-chip" onclick="netReset()">↺ Reset</button>
+      </div>
+    </div>
+    <div class="net-canvas-wrap">
+      <canvas id="net-canvas"></canvas>
+      <div class="net-stats" id="net-stats"></div>
+      <div class="net-info" id="net-info"></div>
+      <div class="net-legend" id="net-legend"></div>
+    </div>
+  </div>
+</div>
+
+<div class="progress-wrap hidden" id="progress-wrap">
+  <div class="progress-title"><span id="progress-title-text">Processing...</span></div>
+  <div class="progress-bar-bg"><div class="progress-bar" id="progress-bar" style="width:0%"></div></div>
+  <div class="progress-detail" id="progress-detail">Initializing...</div>
+</div>
+
+<div id="file-modal" class="modal-bg hidden" onclick="closeFileModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-hdr">
+      <div class="modal-ico" id="modal-icon"></div>
+      <div><div class="modal-fname" id="modal-filename"></div><div class="modal-fmeta" id="modal-meta"></div></div>
+      <button class="modal-close" onclick="closeFileModal()">✕</button>
+    </div>
+    <div class="modal-tabs">
+      <button class="modal-tab on" onclick="switchModalTab('preview',this)">Preview</button>
+      <button class="modal-tab" onclick="switchModalTab('strings',this)">Strings</button>
+      <button class="modal-tab" onclick="switchModalTab('hashes',this)">Hashes</button>
+    </div>
+    <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;">
+      <div class="modal-pane on" id="modal-preview"></div>
+      <div class="modal-pane" id="modal-strings"></div>
+      <div class="modal-pane" id="modal-hashes"></div>
+    </div>
+    <div class="modal-footer">
+      <div class="modal-footer-meta" id="modal-footer-meta"></div>
+      <button class="act-btn" onclick="extractFile(currentModalFile&&currentModalFile.name)">Extract</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── THEME TOGGLE ──
+function toggleTheme() {
+  const html = document.documentElement;
+  const current = html.getAttribute('data-theme') || 'dark';
+  const next = current === 'dark' ? 'light' : 'dark';
+  html.setAttribute('data-theme', next);
+  document.getElementById('theme-btn').textContent = next === 'dark' ? '🌙' : '☀';
+  if(document.getElementById('tab-heatmap').classList.contains('active')) renderHeatmap();
+}
+
+// ── CLOCK ──
+setInterval(()=>{
+  const n=new Date();
+  document.getElementById('clock').textContent=n.toLocaleTimeString('en',{hour12:false});
+},1000);
+
+// ── STATE ──
+let sessions=[],db={sessions:[],files:[],dns:[],alerts:[],hosts:new Set()};
+let selectedSession=null,activeDetailTab='overview',rpMode='timeline';
+let activeProtos=new Set();
+let currentModalFile=null;
+
+// ── DEMO DATA ──
+function generateDemoData() {
+  const now = Date.now();
+  return [
+    {
+      id:'sess_001', proto:'HTTP', ts: now - 120000,
+      src:'10.0.1.45:53821', dst:'93.184.216.34:80',
+      srcHost:'workstation-7', dstHost:'example.com',
+      bytes:{ req:2048, res:45320 }, duration:342,
+      state:'CLOSED', flags:['file','dns'],
+      request:{ method:'GET', url:'/download/report-2024.pdf', version:'HTTP/1.1',
+        headers:{ 'Host':'example.com','User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64)','Accept':'*/*','Connection':'keep-alive' } },
+      response:{ status:200, statusText:'OK',
+        headers:{ 'Content-Type':'application/pdf','Content-Length':'44312','Content-Disposition':'attachment; filename="report-2024.pdf"','Server':'nginx/1.18.0','Cache-Control':'no-cache' },
+        body:'%PDF-1.4 binary payload...' },
+      files:[
+        { name:'report-2024.pdf', mime:'application/pdf', size:44312, entropy:7.82, md5:'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6', sha256:'abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890', icon:'📄', color:'#ff6b6b',
+          content:{type:'pdf',pages:[
+            {heading:'Annual Report 2024 — Executive Summary',body:'This report outlines the financial performance and strategic initiatives for the fiscal year ending December 31, 2024. Total revenue increased 18% year-over-year to $4.2B, driven primarily by expansion in APAC markets and strong enterprise software sales.\n\nOperating income improved by 340 basis points to 22.4% margin, reflecting operational efficiencies realized from the 2023 infrastructure consolidation program.'},
+            {heading:'Financial Highlights',table:{headers:['Metric','FY2024','FY2023','YoY'],rows:[['Revenue','$4.2B','$3.56B','+18%'],['Gross Margin','61.2%','58.4%','+280bps'],['EBITDA','$940M','$756M','+24%'],['EPS (diluted)','$3.42','$2.88','+18.8%'],['Cash & Equivalents','$1.1B','$890M','+23.6%']]}},
+            {heading:'Risk Factors',body:'Forward-looking statements involve risks and uncertainties. Key risks include: macroeconomic headwinds in Europe, FX exposure from APAC operations (~$120M annualized), and ongoing litigation related to the 2022 acquisition of DataCore Inc.'}
+          ]}
+        }
+      ],
+      dns:[{ query:'example.com', type:'A', answer:'93.184.216.34', ts: now - 130000 }],
+      tls:null,
+      alerts:[{ sev:'med', title:'Large file transfer', desc:'44 KB PDF extracted over unencrypted HTTP', icon:'⚠️' }],
+      timeline:[
+        { type:'dns', time:now-130000, label:'DNS query', detail:'example.com → 93.184.216.34' },
+        { type:'req', time:now-120000, label:'GET /download/report-2024.pdf', detail:'HTTP/1.1 · 2048 bytes' },
+        { type:'res', time:now-119658, label:'200 OK — PDF transfer', detail:'44312 bytes · application/pdf' },
+        { type:'file', time:now-119658, label:'File extracted', detail:'report-2024.pdf (entropy 7.82)' }
+      ]
+    },
+    {
+      id:'sess_002', proto:'HTTPS', ts: now - 95000,
+      src:'10.0.1.45:53840', dst:'140.82.121.4:443',
+      srcHost:'workstation-7', dstHost:'github.com',
+      bytes:{ req:1024, res:8192 }, duration:891,
+      state:'ESTABLISHED', flags:['tls'],
+      request:{ method:'POST', url:'/api/v1/repos/user/repo/git/commits', version:'HTTP/1.1',
+        headers:{ 'Host':'api.github.com','Authorization':'Bearer ghp_xxxxxxxxxxxxxxxxxxxx','Content-Type':'application/json','User-Agent':'git/2.39.0' },
+        body:'{"message":"Update config","content":"base64=="}' },
+      response:{ status:201, statusText:'Created',
+        headers:{ 'Content-Type':'application/json','X-RateLimit-Remaining':'4998','X-GitHub-Request-Id':'A1B2C3D4' },
+        body:'{"sha":"abc123def456","url":"https://api.github.com/..."}' },
+      files:[], dns:[], tls:{ version:'TLSv1.3', cipher:'TLS_AES_256_GCM_SHA384', sni:'api.github.com', cert:'github.com' },
+      alerts:[
+        { sev:'high', title:'API token detected', desc:'GitHub Personal Access Token (ghp_*) in Authorization header', icon:'🔑' },
+        { sev:'low', title:'TLS 1.3', desc:'Strong cipher suite in use', icon:'🔒' }
+      ],
+      timeline:[
+        { type:'tls', time:now-95000, label:'TLS 1.3 handshake', detail:'api.github.com · AES_256_GCM' },
+        { type:'req', time:now-94800, label:'POST /api/v1/repos/.../commits', detail:'Authorization: Bearer ghp_***' },
+        { type:'res', time:now-93909, label:'201 Created', detail:'Commit object returned' }
+      ]
+    },
+    {
+      id:'sess_003', proto:'DNS', ts: now - 88000,
+      src:'10.0.1.45:63291', dst:'8.8.8.8:53',
+      srcHost:'workstation-7', dstHost:'dns.google',
+      bytes:{ req:68, res:84 }, duration:12,
+      state:'CLOSED', flags:['dns'],
+      request:{ method:'QUERY', url:'suspicious-domain-xyz123.ru', version:'DNS',
+        headers:{ 'Type':'A','Class':'IN','ID':'0x4A2F' }, body:'' },
+      response:{ status:0, statusText:'NOERROR', headers:{ 'TTL':'300','Answer':'185.220.101.42' }, body:'' },
+      files:[],
+      dns:[
+        { query:'suspicious-domain-xyz123.ru', type:'A', answer:'185.220.101.42', ts:now-88000, ttl:300 },
+        { query:'mail.suspicious-domain-xyz123.ru', type:'MX', answer:'mail.suspicious-domain-xyz123.ru', ts:now-87500, ttl:300 }
+      ],
+      tls:null,
+      alerts:[
+        { sev:'high', title:'Suspicious TLD', desc:'Query to .ru domain with high-entropy subdomain — possible DGA or C2', icon:'🚨' },
+        { sev:'high', title:'Tor exit node IP', desc:'Resolved IP 185.220.101.42 is a known Tor exit node', icon:'🕵️' }
+      ],
+      timeline:[
+        { type:'dns', time:now-88000, label:'DNS A query', detail:'suspicious-domain-xyz123.ru' },
+        { type:'dns', time:now-87500, label:'DNS MX query', detail:'mail.suspicious-domain-xyz123.ru' },
+        { type:'res', time:now-87988, label:'Resolved → 185.220.101.42', detail:'TTL 300s · Tor exit node' }
+      ]
+    },
+    {
+      id:'sess_004', proto:'FTP', ts: now - 72000,
+      src:'10.0.1.45:21001', dst:'203.0.113.55:21',
+      srcHost:'workstation-7', dstHost:'ftp.corp-server.internal',
+      bytes:{ req:512, res:1048576 }, duration:4200,
+      state:'CLOSED', flags:['file','creds'],
+      request:{ method:'RETR', url:'/exports/customer_data_2024.csv', version:'FTP',
+        headers:{ 'USER':'jsmith','PASS':'Summer2024!','TYPE':'I','PASV':'' }, body:'' },
+      response:{ status:226, statusText:'Transfer complete', headers:{ 'Size':'1048576','Transfer-time':'4.2s' }, body:'' },
+      files:[
+        { name:'customer_data_2024.csv', mime:'text/csv', size:1048576, entropy:5.12, md5:'f1e2d3c4b5a6f7e8d9c0b1a2f3e4d5c6', sha256:'fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210', icon:'📊', color:'#00ff88',
+          content:{type:'csv',headers:['customer_id','first_name','last_name','email','phone','ssn','credit_card','balance'],
+            rows:[
+              ['C-10042','James','Harrington','j.harrington@email.com','+1-555-0142','***-**-4821','4111-XXXX-XXXX-1234','$12,400'],
+              ['C-10043','Sarah','Chen','s.chen@webmail.net','+1-555-0198','***-**-7734','5500-XXXX-XXXX-5678','$8,750'],
+              ['C-10044','Mohammed','Al-Rashid','m.alrashid@corp.ae','+971-55-123','N/A','4532-XXXX-XXXX-9012','$45,200'],
+              ['C-10045','Elena','Volkova','e.volkova@mail.ru','+7-916-234','N/A','6011-XXXX-XXXX-3456','$3,100'],
+              ['C-10046','David','Okonkwo','d.okonkwo@netng.com','+234-80-345','N/A','4716-XXXX-XXXX-7890','$22,800'],
+            ],totalRows:48291}
+        }
+      ],
+      dns:[], tls:null,
+      alerts:[
+        { sev:'high', title:'Cleartext credentials', desc:'FTP USER/PASS transmitted in plaintext: jsmith / Summer2024!', icon:'🔓' },
+        { sev:'high', title:'Large CSV exfiltration', desc:'1 MB customer data file retrieved over unencrypted FTP', icon:'🚨' }
+      ],
+      timeline:[
+        { type:'req', time:now-72000, label:'FTP USER jsmith', detail:'Cleartext authentication' },
+        { type:'req', time:now-71990, label:'FTP PASS Summer2024!', detail:'⚠ Cleartext password' },
+        { type:'req', time:now-71980, label:'RETR customer_data_2024.csv', detail:'Passive mode transfer' },
+        { type:'file', time:now-67800, label:'1 MB CSV extracted', detail:'customer_data_2024.csv · entropy 5.12' },
+        { type:'res', time:now-67800, label:'226 Transfer complete', detail:'4.2s total' }
+      ]
+    },
+    {
+      id:'sess_005', proto:'SMTP', ts: now - 45000,
+      src:'10.0.1.22:45901', dst:'74.125.224.109:25',
+      srcHost:'mail-relay', dstHost:'smtp.gmail.com',
+      bytes:{ req:8192, res:512 }, duration:1100,
+      state:'CLOSED', flags:['file','creds'],
+      request:{ method:'EHLO', url:'mail-relay.corp.local', version:'SMTP',
+        headers:{ 'EHLO':'mail-relay.corp.local','AUTH':'PLAIN AGpzbWl0aABTdW1tZXIyMDI0IQ==','MAIL FROM':'<reports@corp.local>','RCPT TO':'<external@gmail.com>','Subject':'Q4 Financial Report - CONFIDENTIAL' },
+        body:'From: reports@corp.local\r\nTo: external@gmail.com\r\nSubject: Q4 Financial Report - CONFIDENTIAL\r\n\r\nPlease find attached the Q4 financial report.\r\n' },
+      response:{ status:250, statusText:'OK: accepted', headers:{}, body:'' },
+      files:[
+        { name:'q4_report.xlsx', mime:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', size:286720, entropy:7.6, md5:'c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8', sha256:'1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', icon:'📊', color:'#00ff88',
+          content:{type:'xlsx',sheets:[
+            {name:'Q4 Summary',headers:['Division','Q4 Revenue','Q4 Expenses','Net Profit','vs Q3'],
+              rows:[['North America','$28.4M','$19.1M','$9.3M','+12%'],['EMEA','$14.2M','$11.8M','$2.4M','-3%'],['APAC','$8.7M','$5.9M','$2.8M','+31%'],['TOTAL','$54.4M','$39.4M','$15.0M','+14%']]},
+            {name:'Headcount',headers:['Region','FTEs','Contractors','Open Reqs','Attrition'],
+              rows:[['NA','1,240','180','42','8.2%'],['EMEA','620','95','18','11.4%'],['APAC','310','44','27','6.1%']]}
+          ]}
+        }
+      ],
+      dns:[], tls:null,
+      alerts:[
+        { sev:'high', title:'Base64 AUTH credentials', desc:'SMTP AUTH PLAIN: jsmith / Summer2024! (decoded)', icon:'🔓' },
+        { sev:'high', title:'Sensitive document exfiltration', desc:'Confidential financial report emailed to external address', icon:'🚨' },
+        { sev:'med', title:'Internal to external data flow', desc:'corp.local → gmail.com over plaintext SMTP', icon:'⚠️' }
+      ],
+      timeline:[
+        { type:'req', time:now-45000, label:'SMTP EHLO', detail:'mail-relay.corp.local' },
+        { type:'req', time:now-44900, label:'AUTH PLAIN (base64)', detail:'Decoded: jsmith / Summer2024!' },
+        { type:'req', time:now-44800, label:'MAIL FROM → RCPT TO', detail:'reports@corp.local → external@gmail.com' },
+        { type:'file', time:now-44700, label:'Attachment: q4_report.xlsx', detail:'280 KB · spreadsheet · entropy 7.6' },
+        { type:'res', time:now-43900, label:'250 OK accepted', detail:'Message delivered' }
+      ]
+    }
+  ];
+}
+
+function generateHex(session) {
+  const lines=[];
+  const raw=`${session.request.method} ${session.request.url} ${session.request.version}\r\n`+
+    Object.entries(session.request.headers).map(([k,v])=>`${k}: ${v}`).join('\r\n')+'\r\n\r\n';
+  for(let i=0;i<Math.min(raw.length,128);i+=16){
+    const chunk=raw.slice(i,i+16);
+    const hex=chunk.split('').map(c=>c.charCodeAt(0).toString(16).padStart(2,'0')).join(' ');
+    const ascii=chunk.split('').map(c=>{const n=c.charCodeAt(0);return n>=32&&n<127?c:'.'}).join('');
+    lines.push({off:i.toString(16).padStart(4,'0'),hex,ascii});
+  }
+  return lines;
+}
+
+// ── ACTIONS ──
+function loadDemoData() {
+  sessions=generateDemoData();
+  renderSessions(sessions);
+  document.getElementById('run-btn').disabled=false;
+  document.getElementById('export-btn').disabled=false;
+  updateStats();
+  showProgress('Loading demo capture...',()=>{ indexToDatabase(sessions); });
+}
+
+async function handleFileUpload(files) {
+  if(!files.length)return;
+  const file=files[0];
+  showProgress(`Uploading ${file.name}...`,null);
+  try {
+    const h=await fetch('http://localhost:5050/health',{signal:AbortSignal.timeout(1500)});
+    if(!h.ok)throw new Error('unhealthy');
+    const form=new FormData();form.append('file',file);
+    const res=await fetch('http://localhost:5050/analyze',{method:'POST',body:form});
+    if(!res.ok){const e=await res.json();throw new Error(e.error||'error');}
+    const data=await res.json();
+    sessions=data.sessions;
+    renderSessions(sessions);
+    document.getElementById('run-btn').disabled=false;
+    document.getElementById('export-btn').disabled=false;
+    indexToDatabase(sessions);
+    document.getElementById('progress-wrap').classList.add('hidden');
+    document.getElementById('progress-bar').style.width='0%';
+  } catch(err) {
+    sessions=generateDemoData();
+    renderSessions(sessions);
+    document.getElementById('run-btn').disabled=false;
+    document.getElementById('export-btn').disabled=false;
+    showProgress('Backend offline — showing demo data',()=>{ indexToDatabase(sessions); });
+  }
+}
+
+function runAnalysis() {
+  if(!sessions.length)return;
+  showProgress('Reassembling TCP streams...',()=>{ updateStats(); });
+}
+
+function showProgress(title,done) {
+  const wrap=document.getElementById('progress-wrap');
+  const bar=document.getElementById('progress-bar');
+  const detail=document.getElementById('progress-detail');
+  const titleEl=document.getElementById('progress-title-text');
+  const steps=['Parsing packet headers...','Reassembling TCP streams...','Extracting HTTP sessions...','Mining metadata...','Detecting credentials...','Extracting embedded files...','Calculating entropy...','Running signatures...','Indexing...','Complete.'];
+  wrap.classList.remove('hidden');
+  titleEl.textContent=title;
+  let i=0;
+  const iv=setInterval(()=>{
+    bar.style.width=Math.round((i/steps.length)*100)+'%';
+    detail.textContent=steps[i]||'';i++;
+    if(i>steps.length){
+      clearInterval(iv);bar.style.width='100%';detail.textContent='Done.';
+      setTimeout(()=>{ wrap.classList.add('hidden');bar.style.width='0%';done&&done(); },600);
+    }
+  },120);
+}
+
+function indexToDatabase(sess) {
+  db.sessions=sess.map(s=>({id:s.id,proto:s.proto,ts:s.ts,src:s.src,dst:s.dst,srcHost:s.srcHost,dstHost:s.dstHost,bytes:s.bytes.req+s.bytes.res,duration:s.duration,state:s.state,alerts:s.alerts.length}));
+  db.files=sess.flatMap(s=>s.files.map(f=>({...f,sessionId:s.id})));
+  db.dns=sess.flatMap(s=>s.dns.map(d=>({...d,sessionId:s.id})));
+  db.alerts=sess.flatMap(s=>s.alerts.map(a=>({...a,sessionId:s.id})));
+  db.hosts=new Set(sess.flatMap(s=>[s.srcHost,s.dstHost]));
+  updateDbView();updateStats();if(document.getElementById("tab-heatmap").classList.contains("active"))renderHeatmap();if(document.getElementById("tab-harvester").classList.contains("active"))renderHarvester();if(document.getElementById("tab-timeline").classList.contains("active"))renderTimeline();
+}
+
+function updateStats() {
+  document.getElementById('stat-sessions').textContent=sessions.length;
+  document.getElementById('stat-files').textContent=sessions.reduce((a,s)=>a+s.files.length,0);
+  const al=sessions.reduce((a,s)=>a+s.alerts.length,0);
+  document.getElementById('stat-alerts').textContent=al;
+  document.getElementById('db-stat-sessions').textContent=db.sessions.length;
+  document.getElementById('db-stat-files').textContent=db.files.length;
+  document.getElementById('db-stat-hosts').textContent=db.hosts.size;
+  const hi=db.alerts.filter(a=>a.sev==='high').length;
+  document.getElementById('db-stat-alerts').textContent=db.alerts.length;
+  document.getElementById('db-stat-high').textContent=hi?`${hi} High`:'';
+  document.getElementById('sess-count').textContent=sessions.length+' SESSIONS';
+}
+
+function clearAll() {
+  sessions=[];db={sessions:[],files:[],dns:[],alerts:[],hosts:new Set()};
+  selectedSession=null;
+  document.getElementById('sessions-list').innerHTML='<div style="padding:20px;text-align:center;color:var(--text3);font-size:10px;letter-spacing:0.06em;">Load a capture file</div>';
+  document.getElementById('empty-detail').style.display='flex';
+  document.getElementById('session-detail').classList.add('hidden');
+  document.getElementById('rp-body').innerHTML='<div style="padding:20px;text-align:center;color:var(--text3);font-size:9px;letter-spacing:0.08em;">Select a session</div>';
+  document.getElementById('run-btn').disabled=true;
+  document.getElementById('export-btn').disabled=true;
+  updateStats();
+}
+
+function exportData() {
+  if(!sessions.length)return;
+  const blob=new Blob([JSON.stringify({exportedAt:new Date().toISOString(),sessions,db:{sessions:db.sessions,files:db.files,dns:db.dns,alerts:db.alerts}},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='netforge-export.json';a.click();
+}
+
+// ── SESSION LIST ──
+function renderSessions(list) {
+  const el=document.getElementById('sessions-list');
+  const filt=list.filter(s=>activeProtos.size===0||activeProtos.has(s.proto));
+  const q=document.getElementById('filter-input').value.toLowerCase();
+  const filtered=filt.filter(s=>!q||s.srcHost.toLowerCase().includes(q)||s.dstHost.toLowerCase().includes(q)||s.src.includes(q)||s.dst.includes(q)||s.proto.toLowerCase().includes(q));
+  if(!filtered.length){el.innerHTML='<div style="padding:20px;text-align:center;color:var(--text3);font-size:10px;letter-spacing:0.06em;">No sessions match filter</div>';return;}
+  el.innerHTML=filtered.map(s=>`
+    <div class="sess-item${selectedSession&&selectedSession.id===s.id?' sel':''}" onclick="selectSession('${s.id}')">
+      <div class="si-top">
+        <span class="si-proto proto-${s.proto}">${s.proto}</span>
+        <span class="si-time">${formatTime(s.ts)}</span>
+      </div>
+      <div class="si-hosts">${s.srcHost} → ${s.dstHost}</div>
+      <div class="si-bottom">
+        <span class="si-bytes">${formatBytes(s.bytes.req+s.bytes.res)}</span>
+        <div class="si-flags">
+          ${s.flags.includes('file')?'<span class="si-flag flag-file">FILE</span>':''}
+          ${s.flags.includes('creds')?'<span class="si-flag flag-creds">CRED</span>':''}
+          ${s.flags.includes('dns')?'<span class="si-flag flag-dns">DNS</span>':''}
+          ${s.flags.includes('tls')?'<span class="si-flag flag-tls">TLS</span>':''}
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function selectSession(id) {
+  selectedSession=sessions.find(s=>s.id===id);
+  if(!selectedSession)return;
+  renderSessions(sessions);
+  document.getElementById('empty-detail').style.display='none';
+  document.getElementById('session-detail').classList.remove('hidden');
+  renderOverview();renderPayload();renderFiles();renderHex();
+  renderRpPanel();
+  switchDetailTab(activeDetailTab);
+}
+
+function toggleProtoFilter(el, proto) {
+  if(activeProtos.has(proto)) {
+    activeProtos.delete(proto);
+    el.classList.remove('on');
+  } else {
+    activeProtos.add(proto);
+    el.classList.add('on');
+  }
+  const clearBtn = document.getElementById('proto-clear-btn');
+  if(clearBtn) clearBtn.style.opacity = activeProtos.size > 0 ? '1' : '0.6';
+  renderSessions(sessions);
+}
+
+function clearProtoFilters() {
+  activeProtos.clear();
+  document.querySelectorAll('.proto-btn:not(.proto-clear)').forEach(b=>b.classList.remove('on'));
+  const clearBtn = document.getElementById('proto-clear-btn');
+  if(clearBtn) clearBtn.style.opacity = '0.6';
+  renderSessions(sessions);
+}
+
+function applyFilter(){renderSessions(sessions);}
+
+// ── DETAIL TABS ──
+function switchDetailTab(tab) {
+  activeDetailTab=tab;
+  document.querySelectorAll('.dtab').forEach(t=>t.classList.remove('on'));
+  document.querySelectorAll('.dcontent').forEach(c=>c.classList.add('hidden'));
+  const el=document.querySelector(`.dtab[onclick*="${tab}"]`);
+  if(el)el.classList.add('on');
+  document.getElementById(`detail-${tab}`).classList.remove('hidden');
+}
+
+// ── RENDERERS ──
+function renderOverview() {
+  const s=selectedSession;
+  const hi=s.alerts.filter(a=>a.sev==='high').length;
+  document.getElementById('detail-overview').innerHTML=`
+    <div class="ov-banner">
+      <div class="ov-banner-top">
+        <div class="ov-id">${s.proto} // ${s.id}</div>
+        <div class="ov-badges">
+          <span class="badge badge-info">${s.proto}</span>
+          <span class="badge badge-${s.state==='CLOSED'?'ok':'warn'}">${s.state}</span>
+          ${hi>0?`<span class="badge badge-danger">⚠ ${hi} ALERT${hi>1?'S':''}</span>`:''}
+        </div>
+      </div>
+      <div class="ov-grid">
+        <div class="ov-field"><div class="ov-label">SOURCE</div><div class="ov-val">${s.src}<br><span style="color:var(--text3);font-size:9px">${s.srcHost}</span></div></div>
+        <div class="ov-field"><div class="ov-label">DESTINATION</div><div class="ov-val">${s.dst}<br><span style="color:var(--text3);font-size:9px">${s.dstHost}</span></div></div>
+        <div class="ov-field"><div class="ov-label">TIMESTAMP</div><div class="ov-val dim">${new Date(s.ts).toLocaleString()}</div></div>
+        <div class="ov-field"><div class="ov-label">TX / RX</div><div class="ov-val bright">${formatBytes(s.bytes.req)} / ${formatBytes(s.bytes.res)}</div></div>
+        <div class="ov-field"><div class="ov-label">DURATION</div><div class="ov-val dim">${s.duration}ms</div></div>
+        <div class="ov-field"><div class="ov-label">ARTIFACTS</div><div class="ov-val">${s.files.length} file${s.files.length!==1?'s':''}, ${s.dns.length} DNS</div></div>
+      </div>
+    </div>
+    ${s.tls?`<div class="section"><div class="section-hdr">TLS metadata</div><div class="kv-grid">
+      <div class="kv-key">VERSION</div><div class="kv-val good">${s.tls.version}</div>
+      <div class="kv-key">CIPHER</div><div class="kv-val">${s.tls.cipher}</div>
+      <div class="kv-key">SNI</div><div class="kv-val">${s.tls.sni}</div>
+      <div class="kv-key">CERTIFICATE</div><div class="kv-val">${s.tls.cert}</div>
+    </div></div>`:''}
+    <div class="section"><div class="section-hdr">Request metadata</div><div class="kv-grid">
+      <div class="kv-key">METHOD</div><div class="kv-val" style="color:#ffcc00">${s.request.method}</div>
+      <div class="kv-key">URL</div><div class="kv-val hi">${s.request.url}</div>
+      <div class="kv-key">VERSION</div><div class="kv-val dim">${s.request.version}</div>
+      ${Object.entries(s.request.headers).map(([k,v])=>`
+        <div class="kv-key">${k}</div>
+        <div class="kv-val${k==='Authorization'||k==='PASS'?' danger':''}">${escHtml(v)}</div>
+      `).join('')}
+    </div></div>
+    <div class="section"><div class="section-hdr">Response metadata</div><div class="kv-grid">
+      <div class="kv-key">STATUS</div><div class="kv-val ${s.response.status<300?'good':s.response.status>=400?'danger':''}">${s.response.status} ${s.response.statusText}</div>
+      ${Object.entries(s.response.headers).map(([k,v])=>`
+        <div class="kv-key">${k}</div><div class="kv-val dim">${escHtml(v)}</div>
+      `).join('')}
+    </div></div>
+    ${s.dns.length?`<div class="section"><div class="section-hdr">DNS queries</div><div class="kv-grid">
+      ${s.dns.map(d=>`<div class="kv-key">${escHtml(d.query)}</div><div class="kv-val">${d.type} → ${d.answer||'?'}${d.ttl?' (TTL '+d.ttl+'s)':''}</div>`).join('')}
+    </div></div>`:''}
+  `;
+}
+
+function renderPayload() {
+  const s=selectedSession;
+  document.getElementById('detail-payload').innerHTML=`
+    <div class="pv">
+      <div class="pv-hdr"><span class="pv-hdr-label">Request payload</span><span class="pv-dir dir-req">→ CLIENT</span></div>
+      <div class="pv-body">${formatPayload(s.request)}</div>
+    </div>
+    <div class="pv">
+      <div class="pv-hdr"><span class="pv-hdr-label">Response payload</span><span class="pv-dir dir-res">← SERVER</span></div>
+      <div class="pv-body">${formatPayload(s.response)}</div>
+    </div>
+    ${s.request.body?`<div class="pv"><div class="pv-hdr"><span class="pv-hdr-label">Request body</span></div><div class="pv-body">${escHtml(s.request.body)}</div></div>`:''}
+  `;
+}
+
+function formatPayload(msg) {
+  const isReq='method' in msg;
+  const sc=msg.status&&msg.status<300?'ps-ok':msg.status>=400?'ps-err':'';
+  const lines=isReq?[`<span class="pm">${msg.method}</span> ${escHtml(msg.url)} ${msg.version}`]:[`<span class="${sc}">${msg.status} ${msg.statusText}</span>`];
+  Object.entries(msg.headers).forEach(([k,v])=>{
+    const isDanger=k==='Authorization'||k==='PASS';
+    lines.push(`<span class="pk">${escHtml(k)}</span>: <span class="${isDanger?'pdanger':'pv2'}">${escHtml(v)}</span>`);
+  });
+  return lines.join('\n');
+}
+
+function renderFiles() {
+  const s=selectedSession;
+  if(!s.files.length){
+    document.getElementById('detail-files').innerHTML='<div class="empty" style="padding:40px 0;"><div style="font-family:var(--display);font-size:10px;letter-spacing:0.12em;color:var(--text3);">NO Files extracted</div><div style="font-size:9px;color:var(--text3);opacity:0.6;margin-top:6px;">No file transfers detected in this session</div></div>';
+    return;
+  }
+  document.getElementById('detail-files').innerHTML=`
+    <div style="font-size:9px;color:var(--text3);letter-spacing:0.06em;margin-bottom:8px;">// CLICK ANY FILE TO INSPECT CONTENTS</div>
+    <table class="files-tbl">
+      <thead><tr><th>Filename</th><th>MIME type</th><th>Size</th><th>ENTROPY</th><th>MD5</th><th></th></tr></thead>
+      <tbody>
+        ${s.files.map((f,i)=>`
+          <tr class="clickable" onclick="openFileModal(${i})">
+            <td><div class="file-name-cell"><span class="file-ico">${f.icon}</span><span class="file-nm">${escHtml(f.name)}</span></div></td>
+            <td><span class="file-mime">${escHtml(f.mime)}</span></td>
+            <td class="file-sz">${formatBytes(f.size)}</td>
+            <td>
+              <div class="ent-bar"><div class="ent-fill" style="width:${(f.entropy/8)*100}%;background:${f.entropy>7?'var(--red)':f.entropy>5?'var(--amber)':'var(--green)'};"></div></div>
+              <span class="ent-val" style="color:${f.entropy>7?'var(--red)':f.entropy>5?'var(--amber)':'var(--green)'}">${f.entropy.toFixed(2)}</span>
+            </td>
+            <td class="file-hash">${f.md5.slice(0,12)}...</td>
+            <td><button class="act-btn" onclick="event.stopPropagation();extractFile('${escHtml(f.name)}')">EXTRACT</button></td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+    <div style="margin-top:10px;border:1px solid var(--border);padding:8px;background:var(--bg2);">
+      ${s.files.map(f=>`
+        <div class="kv-grid" style="margin-bottom:6px;">
+          <div class="kv-key">SHA-256</div><div class="kv-val dim" style="font-size:9px;">${f.sha256}</div>
+          <div class="kv-key">Entropy note</div><div class="kv-val ${f.entropy>7?'danger':''}">${f.entropy>7?'High — possible encryption':f.entropy>5?'Moderate — structured binary':'Low — plaintext'}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderHex() {
+  const s=selectedSession;
+  const lines=generateHex(s);
+  document.getElementById('detail-hex').innerHTML=`
+    <div style="font-size:9px;color:var(--text3);letter-spacing:0.08em;margin-bottom:8px;">// FIRST 128 bytes — REASSEMBLED STREAM</div>
+    <div class="pv">
+      <div class="pv-hdr"><span class="pv-hdr-label">Raw stream — ${s.src} → ${s.dst}</span><span class="pv-dir dir-req">Hex dump</span></div>
+      <div class="pv-body">
+        <div class="hex-grid">
+          ${lines.map(l=>`
+            <span class="hex-off">${l.off}</span>
+            <span class="hex-b">${l.hex.padEnd(47)}</span>
+            <span class="hex-a">${l.ascii.split('').map(c=>c!='.'?`<span class="hex-p">${escHtml(c)}</span>`:escHtml(c)).join('')}</span>
+          `).join('\n')}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ── RIGHT PANEL ──
+let currentRpMode='timeline';
+function switchRp(mode,el) {
+  currentRpMode=mode;
+  document.querySelectorAll('.rp-tab').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on');
+  renderRpPanel();
+}
+
+function renderRpPanel() {
+  const s=selectedSession;
+  if(!s){document.getElementById('rp-body').innerHTML='<div style="padding:20px;text-align:center;color:var(--text3);font-size:9px;letter-spacing:0.08em;">Select a session</div>';return;}
+  if(currentRpMode==='timeline') {
+    document.getElementById('rp-body').innerHTML=s.timeline.map(t=>`
+      <div class="tl-item tl-${t.type}">
+        <div class="tl-time">${new Date(t.time).toLocaleTimeString('en',{hour12:false})} +${t.time-s.ts}ms</div>
+        <div class="tl-label">${escHtml(t.label)}</div>
+        <div class="tl-detail">${escHtml(t.detail)}</div>
+      </div>
+    `).join('');
+  } else if(currentRpMode==='alerts') {
+    document.getElementById('rp-body').innerHTML=s.alerts.map(a=>`
+      <div class="al-item al-${a.sev}">
+        <div class="al-sev">${a.sev.toUpperCase()} SEVERITY</div>
+        <div class="al-title">${escHtml(a.title)}</div>
+        <div class="al-desc">${escHtml(a.desc)}</div>
+      </div>
+    `).join('');
+  } else if(currentRpMode==='dns') {
+    const dns=s.dns;
+    if(!dns.length){document.getElementById('rp-body').innerHTML='<div style="padding:20px;text-align:center;color:var(--text3);font-size:9px;letter-spacing:0.06em;">No DNS activity</div>';return;}
+    document.getElementById('rp-body').innerHTML=dns.map(d=>`
+      <div style="border:1px solid var(--border);padding:7px;margin-bottom:4px;background:var(--bg2);">
+        <div style="font-size:10px;color:var(--blue);margin-bottom:2px;">${escHtml(d.query)}</div>
+        <div style="font-size:9px;color:var(--text3);">${d.type} → ${d.answer||'?'}${d.ttl?' · TTL '+d.ttl+'s':''}</div>
+      </div>
+    `).join('');
+  }
+}
+
+// ── DB VIEW ──
+function updateDbView() {
+  const tbl=(rows,cols)=>{
+    if(!rows.length)return'<div style="padding:16px;text-align:center;color:var(--text3);font-size:10px;">No records</div>';
+    return`<table class="db-tbl"><thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${rows.slice(0,15).map(r=>`<tr>${cols.map(c=>`<td title="${escHtml(String(r[c]??''))}">${escHtml(String(r[c]??''))}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+  };
+  document.getElementById('db-sessions-table').innerHTML=tbl(db.sessions,['id','proto','srcHost','dstHost','bytes','state','alerts']);
+  document.getElementById('db-files-table').innerHTML=tbl(db.files,['name','mime','size','entropy','sessionId']);
+  document.getElementById('db-dns-table').innerHTML=tbl(db.dns,['query','type','answer','ttl','sessionId']);
+  document.getElementById('db-alerts-table').innerHTML=tbl(db.alerts,['sev','title','sessionId']);
+}
+
+// ── SEARCH ──
+const quickTags=['credentials','PDF','exfiltration','DNS','FTP','192.168','Authorization','PASS'];
+document.getElementById('search-tags').innerHTML=quickTags.map(t=>
+  `<button class="qtag" onclick="document.getElementById('search-query').value='${t}';doSearch()">${t}</button>`
+).join('');
+
+function doSearch() {
+  const q=document.getElementById('search-query').value.toLowerCase().trim();
+  if(!q){document.getElementById('search-results').innerHTML='';return;}
+  if(!sessions.length){document.getElementById('search-results').innerHTML='<div style="color:var(--text3);font-size:10px;letter-spacing:0.06em;">No data loaded</div>';return;}
+  const results=[];
+  sessions.forEach(s=>{
+    const fields=[s.src,s.dst,s.srcHost,s.dstHost,s.proto,JSON.stringify(s.request.headers),s.request.body||'',JSON.stringify(s.response.headers),s.response.body||'',...s.files.map(f=>f.name+' '+f.mime+' '+f.md5),...s.dns.map(d=>d.query+' '+(d.answer||'')),...s.alerts.map(a=>a.title+' '+a.desc)];
+    const matches=fields.filter(f=>f.toLowerCase().includes(q));
+    if(matches.length)results.push({session:s,matches,score:matches.length});
+  });
+  results.sort((a,b)=>b.score-a.score);
+  document.getElementById('search-results').innerHTML=results.length?results.map(r=>`
+    <div class="result-card" onclick="switchTab('capture');setTimeout(()=>selectSession('${r.session.id}'),50)">
+      <div class="rc-hdr">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="rc-proto">${r.session.proto}</span>
+          <span class="rc-host">${r.session.srcHost} → ${r.session.dstHost}</span>
+        </div>
+        <span class="rc-score">${r.score} MATCH${r.score>1?'ES':''} · ${r.session.id}</span>
+      </div>
+      <div class="rc-body">${r.matches.slice(0,3).map(m=>highlightMatch(m,q)).join('<br>')}</div>
+    </div>
+  `).join(''):'<div style="color:var(--text3);font-size:10px;letter-spacing:0.06em;padding:10px 0;">No results found</div>';
+}
+
+function highlightMatch(text,q) {
+  const idx=text.toLowerCase().indexOf(q);
+  if(idx<0)return escHtml(text.slice(0,80))+'...';
+  const start=Math.max(0,idx-30),end=Math.min(text.length,idx+q.length+40);
+  return(start>0?'...':'')+escHtml(text.slice(start,idx))+`<span class="match">${escHtml(text.slice(idx,idx+q.length))}</span>`+escHtml(text.slice(idx+q.length,end))+(end<text.length?'...':'');
+}
+
+// ── TAB SWITCHING ──
+function switchTab(name) {
+  document.querySelectorAll('.tb-btn').forEach(b=>b.classList.toggle('active',b.textContent.toLowerCase().includes(name)));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id===`tab-${name}`));
+  if(name==='heatmap') setTimeout(renderHeatmap, 50);
+  if(name==='harvester') setTimeout(renderHarvester, 50);
+  if(name==='timeline'){setTimeout(()=>{renderTimeline();initNetMouse();},50);}
+}
+
+// ── FILE MODAL ──
+function openFileModal(idx) {
+  const f=selectedSession.files[idx];
+  if(!f)return;
+  currentModalFile=f;
+  document.getElementById('modal-icon').textContent=f.icon;
+  document.getElementById('modal-filename').textContent=f.name;
+  document.getElementById('modal-meta').innerHTML=`<span>${formatBytes(f.size)}</span><span>${f.mime}</span><span style="color:${f.entropy>7?'var(--red)':f.entropy>5?'var(--amber)':'var(--green)'}">ENTROPY ${f.entropy.toFixed(2)}</span>`;
+  document.getElementById('modal-footer-meta').innerHTML=`<span>MD5: ${f.md5}</span><span>SESSION: ${selectedSession.id}</span>`;
+  renderModalPreview(f);renderModalStrings(f);renderModalHashes(f);
+  document.querySelectorAll('.modal-tab').forEach((t,i)=>t.classList.toggle('on',i===0));
+  document.querySelectorAll('.modal-pane').forEach((p,i)=>p.classList.toggle('on',i===0));
+  document.getElementById('file-modal').classList.remove('hidden');
+  document.body.style.overflow='hidden';
+}
+
+function closeFileModal(e) {
+  if(e&&e.target!==document.getElementById('file-modal'))return;
+  document.getElementById('file-modal').classList.add('hidden');
+  document.body.style.overflow='';
+}
+
+function switchModalTab(tab,el) {
+  document.querySelectorAll('.modal-tab').forEach(t=>t.classList.remove('on'));
+  document.querySelectorAll('.modal-pane').forEach(p=>p.classList.remove('on'));
+  el.classList.add('on');
+  document.getElementById(`modal-${tab}`).classList.add('on');
+}
+
+function renderModalPreview(f) {
+  const el=document.getElementById('modal-preview');
+  if(!f.content){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3);font-size:10px;letter-spacing:0.06em;">BINARY FILE — NO PREVIEW AVAILABLE<br><span style="font-size:9px;opacity:0.6;">USE EXTRACT TO SAVE AND OPEN LOCALLY</span></div>';return;}
+  const c=f.content;
+  if(c.type==='pdf'){
+    el.innerHTML=c.pages.map((p,i)=>`<div class="pdf-page"><div class="pdf-pg-num">Page ${i+1} of ${c.pages.length}</div><div class="pdf-heading">${escHtml(p.heading)}</div>${p.body?`<div class="pdf-body">${escHtml(p.body).replace(/\n/g,'<br>')}</div>`:''}${p.table?`<table class="pdf-tbl"><thead><tr>${p.table.headers.map(h=>`<th>${escHtml(h)}</th>`).join('')}</tr></thead><tbody>${p.table.rows.map(r=>`<tr>${r.map(c=>`<td>${escHtml(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`:''}</div>`).join('');
+  } else if(c.type==='csv'){
+    el.innerHTML=`<div class="csv-warn">⚠ SHOWING FIRST ${c.rows.length} of ${c.totalRows.toLocaleString()} rows — PII detected</div><div style="overflow-x:auto;"><table class="csv-tbl"><thead><tr>${c.headers.map(h=>`<th>${escHtml(h)}</th>`).join('')}</tr></thead><tbody>${c.rows.map(r=>`<tr>${r.map((cell,i)=>`<td class="${['ssn','credit_card','email'].includes(c.headers[i])?'pii':''}">${escHtml(cell)}</td>`).join('')}</tr>`).join('')}</tbody></table></div><div style="font-size:9px;color:var(--text3);margin-top:6px;">... ${(c.totalRows-c.rows.length).toLocaleString()} more rows</div>`;
+  } else if(c.type==='xlsx'){
+    let active=0;
+    const renderSheet=idx=>{const sh=c.sheets[idx];return`<table class="csv-tbl" style="min-width:500px"><thead><tr>${sh.headers.map(h=>`<th>${escHtml(h)}</th>`).join('')}</tr></thead><tbody>${sh.rows.map(r=>`<tr>${r.map(cell=>`<td>${escHtml(cell)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;};
+    el.innerHTML=`<div style="display:flex;gap:0;margin-bottom:8px;border-bottom:1px solid var(--border2);">${c.sheets.map((s,i)=>`<button class="modal-tab ${i===0?'on':''}" style="border-bottom:2px solid ${i===0?'var(--amber)':'transparent'};" onclick="this.parentNode.querySelectorAll('button').forEach((b,j)=>{b.classList.toggle('on',j===this.dataset.idx*1);b.style.borderBottomColor=j===this.dataset.idx*1?'var(--amber)':'transparent';});document.getElementById('xlsx-body').innerHTML=window._xlsxSheets[this.dataset.idx*1];" data-idx="${i}">${escHtml(s.name)}</button>`).join('')}</div><div id="xlsx-body" style="overflow-x:auto;">${renderSheet(0)}</div>`;
+    window._xlsxSheets=c.sheets.map((_,i)=>renderSheet(i));
+  }
+}
+
+function renderModalStrings(f) {
+  const strings=[];
+  if(f.content?.type==='pdf'){strings.push(...[{off:'0x0024',val:'%PDF-1.4',t:''},{off:'0x0040',val:'Adobe Acrobat 23.0',t:''},{off:'0x0180',val:'Annual Report 2024',t:''},{off:'0x02a0',val:'reports@corp.local',t:'email'},{off:'0x03c4',val:'https://investor.example.com/reports',t:'url'},{off:'0x0520',val:'Author: CFO Office',t:''},{off:'0x0600',val:'CONFIDENTIAL — DO NOT DISTRIBUTE',t:'cred'}]);}
+  else if(f.content?.type==='csv'){strings.push(...[{off:'0x0000',val:'customer_id,first_name,last_name,email,phone,ssn',t:''},{off:'0x0060',val:'j.harrington@email.com',t:'email'},{off:'0x00c0',val:'s.chen@webmail.net',t:'email'},{off:'0x0200',val:'185.220.101.42',t:'ip'},{off:'0x0480',val:'SSN:***-**-4821',t:'cred'},{off:'0x0560',val:'4111-XXXX-XXXX-1234',t:'cred'},{off:'0x0720',val:'Summer2024!',t:'cred'}]);}
+  else if(f.content?.type==='xlsx'){strings.push(...[{off:'0x0000',val:'[Content_Types].xml',t:''},{off:'0x0080',val:'Microsoft Excel 365',t:''},{off:'0x0100',val:'Q4 Financial Report — CONFIDENTIAL',t:'cred'},{off:'0x0200',val:'reports@corp.local',t:'email'},{off:'0x02c0',val:'external@gmail.com',t:'email'},{off:'0x0340',val:'https://corp.sharepoint.com/sites/finance',t:'url'},{off:'0x0580',val:'LastModifiedBy: jsmith',t:'cred'}]);}
+  else{strings.push({off:'0x0000',val:'NO STRINGS EXTRACTED',t:''});}
+  document.getElementById('modal-strings').innerHTML=`
+    <div style="font-size:9px;color:var(--text3);letter-spacing:0.06em;margin-bottom:8px;">// ${strings.length} strings extracted · <span style="color:var(--red)">red = sensitive</span> · <span style="color:var(--blue)">blue = URL</span> · <span style="color:var(--amber2)">amber = email</span> · <span style="color:var(--green)">green = IP</span></div>
+    ${strings.map(s=>`<div class="str-line"><span class="str-off">${s.off}</span><span class="str-v str-${s.t||'plain'}">${escHtml(s.val)}</span></div>`).join('')}
+  `;
+}
+
+function renderModalHashes(f) {
+  const ec=f.entropy>7?'var(--red)':f.entropy>5?'var(--amber)':'var(--green)';
+  const en=f.entropy>7?'High entropy — possible encryption.':f.entropy>5?'Moderate — structured binary OR COMPRESSED TEXT.':'Low — plaintext data.';
+  const mimeMap={'application/pdf':'25 50 44 46 2D 31 2E (%PDF-1.)','text/csv':'63 75 73 74 6F (ASCII TEXT)','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':'50 4B 03 04 (PK ZIP HEADER)'};
+  document.getElementById('modal-hashes').innerHTML=`
+    <div class="section"><div class="section-hdr">Cryptographic hashes</div><div class="kv-grid">
+      <div class="kv-key">MD5</div><div class="kv-val" style="font-size:10px;word-break:break-all">${f.md5}</div>
+      <div class="kv-key">SHA-256</div><div class="kv-val dim" style="font-size:10px;word-break:break-all">${f.sha256}</div>
+      <div class="kv-key">SHA-1 (est.)</div><div class="kv-val dim" style="font-size:10px;word-break:break-all">${f.md5.split('').reverse().join('').repeat(2).slice(0,40)}</div>
+    </div></div>
+    <div class="section"><div class="section-hdr">Entropy analysis</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <div class="hash-ent-bar" style="flex:1"><div class="hash-ent-fill" style="width:${(f.entropy/8)*100}%;background:${ec};"></div></div>
+        <span style="font-family:var(--display);font-size:14px;font-weight:700;color:${ec};text-shadow:0 0 8px ${ec}">${f.entropy.toFixed(4)}</span>
+      </div>
+      <div style="font-size:9px;color:${ec};letter-spacing:0.04em;">${en}</div>
+    </div>
+    <div class="section"><div class="section-hdr">File identification</div><div class="kv-grid">
+      <div class="kv-key">Filename</div><div class="kv-val">${escHtml(f.name)}</div>
+      <div class="kv-key">Declared MIME</div><div class="kv-val">${escHtml(f.mime)}</div>
+      <div class="kv-key">Size</div><div class="kv-val">${f.size.toLocaleString()} bytes</div>
+      <div class="kv-key">Magic bytes</div><div class="kv-val dim" style="font-size:9px;">${mimeMap[f.mime]||'-- UNKNOWN --'}</div>
+      <div class="kv-key">VirusTotal</div><div class="kv-val dim">Not submitted</div>
+    </div></div>
+  `;
+}
+
+// ── UTILS ──
+function formatBytes(n){if(n<1024)return n+' B';if(n<1048576)return(n/1024).toFixed(1)+' KB';return(n/1048576).toFixed(1)+' MB';}
+function formatTime(ts){return new Date(ts).toLocaleTimeString('en',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});}
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function extractFile(name){alert(`In a real deployment, "${name}" would be extracted from the reassembled stream.`);}
+
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){document.getElementById('file-modal').classList.add('hidden');document.body.style.overflow='';}});
+
+
+// ── GEO IP DATA ──
+// Simulated geo data based on demo session IPs
+const GEO_DB = {
+  '93.184.216.34':  {country:'United States', cc:'US', lat:37.09, lon:-95.71, flag:'🇺🇸', risk:'clean'},
+  '140.82.121.4':   {country:'United States', cc:'US', lat:37.09, lon:-95.71, flag:'🇺🇸', risk:'clean'},
+  '8.8.8.8':        {country:'United States', cc:'US', lat:37.09, lon:-95.71, flag:'🇺🇸', risk:'clean'},
+  '185.220.101.42': {country:'Germany',       cc:'DE', lat:51.16, lon:10.45,  flag:'🇩🇪', risk:'high'},
+  '203.0.113.55':   {country:'China',         cc:'CN', lat:35.86, lon:104.19, flag:'🇨🇳', risk:'med'},
+  '74.125.224.109': {country:'United States', cc:'US', lat:37.09, lon:-95.71, flag:'🇺🇸', risk:'clean'},
+  '10.0.1.45':      {country:'Local network', cc:'LO', lat:0,     lon:0,      flag:'🏠',  risk:'clean'},
+  '10.0.1.22':      {country:'Local network', cc:'LO', lat:0,     lon:0,      flag:'🏠',  risk:'clean'},
+};
+
+function getGeo(ip) {
+  if(GEO_DB[ip]) return GEO_DB[ip];
+  // Rough guess from IP range for unknown IPs
+  const first = parseInt(ip.split('.')[0]);
+  if(first===10||first===192||first===172) return {country:'Local network',cc:'LO',lat:0,lon:0,flag:'🏠',risk:'clean'};
+  return {country:'Unknown',cc:'??',lat:20,lon:0,flag:'🌐',risk:'unknown'};
+}
+
+function renderHeatmap() {
+  if(!sessions.length) return;
+
+  // Aggregate geo data
+  const countryMap = {};
+  const ipMap = {};
+  let foreign=0, domestic=0, flagged=0;
+
+  sessions.forEach(s => {
+    const dstIp = s.dst.split(':')[0];
+    const geo = getGeo(dstIp);
+    if(!GEO_DB[dstIp] && dstIp.startsWith('10.')) return;
+
+    // Country counts
+    if(!countryMap[geo.country]) countryMap[geo.country]={...geo,count:0,bytes:0};
+    countryMap[geo.country].count++;
+    countryMap[geo.country].bytes += (s.bytes?.req||0)+(s.bytes?.res||0);
+
+    // IP counts
+    if(!ipMap[dstIp]) ipMap[dstIp]={...geo,ip:dstIp,count:0};
+    ipMap[dstIp].count++;
+
+    if(geo.cc==='LO') domestic++;
+    else foreign++;
+    if(geo.risk==='high'||geo.risk==='med') flagged++;
+  });
+
+  const countries = Object.values(countryMap).filter(c=>c.cc!=='LO').sort((a,b)=>b.count-a.count);
+  const ips = Object.values(ipMap).filter(i=>i.cc!=='LO').sort((a,b)=>b.count-a.count);
+  const uniqueCountries = new Set(countries.map(c=>c.cc)).size;
+
+  // Update stats
+  document.getElementById('hm-countries').textContent = uniqueCountries;
+  document.getElementById('hm-domestic').textContent = domestic;
+  document.getElementById('hm-foreign').textContent = foreign;
+  document.getElementById('hm-suspicious').textContent = flagged;
+
+  // Render SVG world map
+  renderWorldMap(countries, ips);
+
+  // Country table
+  const maxCount = countries[0]?.count||1;
+  document.querySelector('#hm-country-tbl tbody').innerHTML = countries.length ?
+    countries.map(c=>`
+      <tr>
+        <td>${c.flag} ${c.country}</td>
+        <td>${c.count}</td>
+        <td>
+          <div class="hm-bar"><div class="hm-bar-fill" style="width:${Math.round((c.count/maxCount)*100)}%"></div></div>
+        </td>
+      </tr>
+    `).join('') :
+    '<tr><td colspan="3" class="hm-empty">No external sessions</td></tr>';
+
+  // Connection log
+  const riskColor = {high:'var(--red)',med:'var(--amber)',clean:'var(--green)',unknown:'var(--text3)'};
+  const riskLabel = {high:'High',med:'Medium',clean:'Clean',unknown:'Unknown'};
+  document.querySelector('#hm-conn-tbl tbody').innerHTML = ips.length ?
+    ips.slice(0,12).map(i=>`
+      <tr>
+        <td>${i.ip}</td>
+        <td>${i.flag} ${i.country}</td>
+        <td>${i.count}</td>
+        <td style="color:${riskColor[i.risk]||'var(--text3)'};">${riskLabel[i.risk]||'—'}</td>
+      </tr>
+    `).join('') :
+    '<tr><td colspan="4" class="hm-empty">No external connections</td></tr>';
+}
+
+function renderWorldMap(countries, ips) {
+  const mapEl = document.getElementById('hm-map');
+  if(!mapEl) return;
+
+  const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const oceanColor = isDark ? '#1a1a18' : '#f0f4f8';
+  const landColor  = isDark ? '#2a2a27' : '#e8e8e2';
+  const borderColor= isDark ? '#3a3a36' : '#d0d0c8';
+  const textColor  = isDark ? '#9a9a92' : '#888880';
+
+  // Simple equirectangular projection
+  const W = mapEl.clientWidth || 900;
+  const H = 420;
+
+  // Build country intensity map
+  const maxCount = Math.max(1, ...countries.map(c=>c.count));
+  const intensityMap = {};
+  countries.forEach(c=>{ intensityMap[c.cc] = c.count/maxCount; });
+
+  // Dot colors for IPs
+  const riskDotColor = {high:'#cc3333',med:'#cc8800',clean:'#2a7a2a',unknown:'#888'};
+
+  function latLonToXY(lat, lon) {
+    const x = ((lon + 180) / 360) * W;
+    const y = ((90 - lat) / 180) * H;
+    return [Math.round(x), Math.round(y)];
+  }
+
+  function intensityToColor(intensity, isDark) {
+    if(isDark) {
+      if(intensity>0.8) return '#4a8ac0';
+      if(intensity>0.6) return '#3a6a96';
+      if(intensity>0.4) return '#2a4a6a';
+      if(intensity>0.2) return '#1a3050';
+      return '#102030';
+    } else {
+      if(intensity>0.8) return '#1a52a8';
+      if(intensity>0.6) return '#3a72c8';
+      if(intensity>0.4) return '#6a9ad8';
+      if(intensity>0.2) return '#9abce8';
+      return '#c8daf4';
+    }
+  }
+
+  // Simplified country polygons as circles/dots on map
+  // We'll use known capital/center coordinates for major countries
+  const COUNTRY_CENTERS = {
+    'US':[38,-97],'GB':[55,-3],'DE':[51,10],'FR':[46,2],'CN':[35,105],
+    'RU':[60,100],'JP':[36,138],'AU':[-25,134],'IN':[20,77],'BR':[-10,-55],
+    'CA':[56,-96],'MX':[23,-102],'ZA':[-29,25],'NG':[10,8],'EG':[27,30],
+    'SA':[24,45],'AE':[24,54],'KR':[36,128],'ID':[-5,120],'AR':[-34,-64],
+    'TR':[39,35],'IT':[42,12],'ES':[40,-4],'PL':[52,20],'NL':[52,5],
+    'SE':[60,15],'NO':[60,10],'UA':[49,32],'TH':[15,101],'MY':[4,109],
+  };
+
+  // Build dots for active IPs
+  const ipDots = ips.map(ip => {
+    const [lat, lon] = [ip.lat, ip.lon];
+    if(lat===0 && lon===0) return '';
+    const [x, y] = latLonToXY(lat, lon);
+    const col = riskDotColor[ip.risk] || '#888';
+    const r = Math.min(3 + ip.count * 2, 12);
+    return `<circle cx="${x}" cy="${y}" r="${r}" fill="${col}" fill-opacity="0.7" stroke="${col}" stroke-width="1">
+      <title>${ip.ip} — ${ip.country} (${ip.count} sessions)</title>
+    </circle>
+    <circle cx="${x}" cy="${y}" r="${r+4}" fill="${col}" fill-opacity="0.15"/>`;
+  }).join('');
+
+  // Country heat blobs
+  const countryBlobs = Object.entries(intensityMap).map(([cc, intensity]) => {
+    const coords = COUNTRY_CENTERS[cc];
+    if(!coords) return '';
+    const [lat, lon] = coords;
+    const [x, y] = latLonToXY(lat, lon);
+    const col = intensityToColor(intensity, isDark);
+    const r = 20 + intensity * 30;
+    return `<circle cx="${x}" cy="${y}" r="${r}" fill="${col}" fill-opacity="0.5"/>`;
+  }).join('');
+
+  // Simplified world outline paths (major landmasses as rough shapes)
+  const landPaths = `
+    <!-- North America -->
+    <path d="M80,60 L180,55 L190,80 L200,120 L180,160 L140,180 L110,200 L90,190 L70,170 L60,140 L65,100 Z" fill="${landColor}" stroke="${borderColor}" stroke-width="0.5"/>
+    <!-- South America -->
+    <path d="M150,200 L210,195 L230,220 L240,270 L220,320 L190,360 L160,360 L145,320 L140,270 L145,230 Z" fill="${landColor}" stroke="${borderColor}" stroke-width="0.5"/>
+    <!-- Europe -->
+    <path d="M380,50 L460,45 L480,60 L490,80 L470,100 L440,110 L400,105 L375,90 L370,70 Z" fill="${landColor}" stroke="${borderColor}" stroke-width="0.5"/>
+    <!-- Africa -->
+    <path d="M390,115 L460,110 L490,130 L500,170 L510,220 L500,280 L470,320 L430,330 L400,310 L380,270 L370,220 L375,170 L380,140 Z" fill="${landColor}" stroke="${borderColor}" stroke-width="0.5"/>
+    <!-- Asia -->
+    <path d="M470,45 L680,40 L720,60 L740,90 L730,130 L690,150 L640,160 L580,165 L520,150 L490,130 L480,100 L470,70 Z" fill="${landColor}" stroke="${borderColor}" stroke-width="0.5"/>
+    <!-- Australia -->
+    <path d="M640,240 L730,235 L760,250 L770,280 L750,310 L700,320 L650,310 L630,285 L625,260 Z" fill="${landColor}" stroke="${borderColor}" stroke-width="0.5"/>
+    <!-- Greenland -->
+    <path d="M200,20 L260,18 L270,35 L255,50 L220,52 L200,40 Z" fill="${landColor}" stroke="${borderColor}" stroke-width="0.5"/>
+  `;
+
+  // Grid lines
+  const gridLines = [];
+  for(let lon=-150; lon<=150; lon+=30) {
+    const [x1] = latLonToXY(90, lon);
+    gridLines.push(`<line x1="${x1}" y1="0" x2="${x1}" y2="${H}" stroke="${borderColor}" stroke-width="0.3" stroke-dasharray="2,4"/>`);
+  }
+  for(let lat=-60; lat<=60; lat+=30) {
+    const [,y1] = latLonToXY(lat, -180);
+    gridLines.push(`<line x1="0" y1="${y1}" x2="${W}" y2="${y1}" stroke="${borderColor}" stroke-width="0.3" stroke-dasharray="2,4"/>`);
+  }
+
+  // Labels
+  const labels = [
+    [38,-97,'US'],[55,-3,'EU'],[35,105,'AS'],[20,77,'IN'],
+    [-25,134,'AU'],[-10,-55,'SA'],[60,100,'RU']
+  ].map(([lat,lon,label])=>{
+    const [x,y] = latLonToXY(lat,lon);
+    return `<text x="${x}" y="${y}" text-anchor="middle" font-size="9" fill="${textColor}" font-family="DM Sans, sans-serif" opacity="0.6">${label}</text>`;
+  }).join('');
+
+  mapEl.innerHTML = `
+    <svg width="100%" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+      <rect width="${W}" height="${H}" fill="${oceanColor}"/>
+      ${gridLines.join('')}
+      ${landPaths}
+      ${countryBlobs}
+      ${ipDots}
+      ${labels}
+    </svg>
+  `;
+}
+
+// Re-render map on dark mode change
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+  if(document.getElementById('tab-heatmap').classList.contains('active')) renderHeatmap();
+});
+
+
+// ── CREDENTIAL HARVESTER ──
+let hvFilter = 'all';
+
+function toggleHvFilter(el, filter) {
+  hvFilter = filter;
+  document.querySelectorAll('.hv-chip').forEach(c => c.classList.remove('hv-chip-on'));
+  el.classList.add('hv-chip-on');
+  renderHarvester();
+}
+
+function extractCredentials(sessions) {
+  const creds = [];
+
+  sessions.forEach(s => {
+    const sid = s.id;
+    const proto = s.proto;
+    const host = s.dstHost;
+    const ts = new Date(s.ts).toLocaleTimeString('en', {hour12:false});
+
+    // FTP cleartext USER/PASS
+    const headers = s.request?.headers || {};
+    if(headers['USER'] && headers['PASS']) {
+      creds.push({type:'password', severity:'high', proto, host, sid, ts,
+        label:'FTP credentials',
+        field:'USER / PASS',
+        value:`${headers['USER']} / ${headers['PASS']}`
+      });
+    }
+
+    // HTTP Basic Auth
+    const auth = headers['Authorization'] || headers['authorization'] || '';
+    if(auth.startsWith('Basic ')) {
+      try {
+        const decoded = atob(auth.slice(6));
+        creds.push({type:'basic', severity:'high', proto, host, sid, ts,
+          label:'HTTP Basic Auth',
+          field:'Authorization',
+          value:decoded
+        });
+      } catch(e) {
+        creds.push({type:'basic', severity:'high', proto, host, sid, ts,
+          label:'HTTP Basic Auth',
+          field:'Authorization',
+          value:auth
+        });
+      }
+    }
+
+    // Bearer tokens
+    if(auth.startsWith('Bearer ')) {
+      const token = auth.slice(7);
+      const isGhp = token.startsWith('ghp_');
+      creds.push({type:'token', severity: isGhp ? 'high' : 'med', proto, host, sid, ts,
+        label: isGhp ? 'GitHub Personal Access Token' : 'Bearer token',
+        field:'Authorization',
+        value:token
+      });
+    }
+
+    // API keys in headers
+    ['X-API-Key','X-Api-Key','api-key','API-Key','x-auth-token','X-Auth-Token'].forEach(k => {
+      if(headers[k]) {
+        creds.push({type:'key', severity:'high', proto, host, sid, ts,
+          label:`API key (${k})`,
+          field:k,
+          value:headers[k]
+        });
+      }
+    });
+
+    // Cookies
+    const cookie = headers['Cookie'] || headers['cookie'] || '';
+    if(cookie && cookie.length > 10) {
+      creds.push({type:'cookie', severity:'med', proto, host, sid, ts,
+        label:'Session cookie',
+        field:'Cookie',
+        value:cookie.length > 80 ? cookie.slice(0,80)+'...' : cookie
+      });
+    }
+
+    // SMTP AUTH PLAIN (base64 decoded)
+    const smtpAuth = headers['AUTH'] || '';
+    if(smtpAuth.startsWith('PLAIN ')) {
+      try {
+        const decoded = atob(smtpAuth.slice(6));
+        const parts = decoded.split(' ').filter(Boolean);
+        creds.push({type:'password', severity:'high', proto, host, sid, ts,
+          label:'SMTP AUTH PLAIN',
+          field:'AUTH',
+          value:parts.join(' / ')
+        });
+      } catch(e) {}
+    }
+
+    // Body credentials (form posts)
+    const body = s.request?.body || '';
+    const bodyPatterns = [
+      {re:/password=([^&\s]+)/i, label:'Form password', type:'password', severity:'high'},
+      {re:/passwd=([^&\s]+)/i, label:'Form password', type:'password', severity:'high'},
+      {re:/pwd=([^&\s]+)/i, label:'Form password', type:'password', severity:'high'},
+      {re:/pass=([^&\s]+)/i, label:'Form password', type:'password', severity:'high'},
+      {re:/"password"\s*:\s*"([^"]+)"/i, label:'JSON password', type:'password', severity:'high'},
+      {re:/api[_-]?key["\s:=]+([a-zA-Z0-9_\-]{16,})/i, label:'API key in body', type:'key', severity:'high'},
+      {re:/token["\s:=]+([a-zA-Z0-9_\-\.]{16,})/i, label:'Token in body', type:'token', severity:'med'},
+      {re:/secret["\s:=]+([a-zA-Z0-9_\-]{8,})/i, label:'Secret in body', type:'key', severity:'high'},
+    ];
+    bodyPatterns.forEach(({re, label, type, severity}) => {
+      const m = body.match(re);
+      if(m) {
+        creds.push({type, severity, proto, host, sid, ts,
+          label, field:'Request body', value:m[1]
+        });
+      }
+    });
+
+    // Alerts that mention credentials
+    s.alerts.forEach(a => {
+      if(a.title.toLowerCase().includes('credential') ||
+         a.title.toLowerCase().includes('password') ||
+         a.title.toLowerCase().includes('cleartext') ||
+         a.title.toLowerCase().includes('token')) {
+        // already captured above mostly, skip duplicates
+      }
+    });
+  });
+
+  return creds;
+}
+
+function renderHarvester() {
+  if(!sessions.length) return;
+
+  const creds = extractCredentials(sessions);
+  const redact = document.getElementById('hv-redact')?.checked;
+
+  // Filter
+  const filtered = hvFilter === 'all' ? creds : creds.filter(c => c.type === hvFilter);
+
+  // Update stats
+  document.getElementById('hv-total').textContent = creds.length;
+  document.getElementById('hv-passwords').textContent = creds.filter(c=>c.type==='password').length;
+  document.getElementById('hv-tokens').textContent = creds.filter(c=>c.type==='token'||c.type==='key').length;
+  document.getElementById('hv-basic').textContent = creds.filter(c=>c.type==='basic').length;
+  const dirtySessions = new Set(creds.map(c=>c.sid)).size;
+  document.getElementById('hv-sessions-clean').textContent = sessions.length - dirtySessions;
+
+  if(!filtered.length) {
+    document.getElementById('hv-content').innerHTML =
+      `<div class="hv-empty">${hvFilter === 'all' ? 'No credentials found in this capture' : `No ${hvFilter} credentials found`}</div>`;
+    return;
+  }
+
+  // Group by severity
+  const high = filtered.filter(c=>c.severity==='high');
+  const med  = filtered.filter(c=>c.severity==='med');
+  const low  = filtered.filter(c=>c.severity==='low');
+
+  const renderGroup = (items, label, badgeClass) => {
+    if(!items.length) return '';
+    return `
+      <div class="hv-section">
+        <div class="hv-section-hdr" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'':'none'">
+          <span class="hv-section-title">${label}</span>
+          <span class="hv-section-count">${items.length} found</span>
+        </div>
+        <div>
+          <table class="hv-tbl">
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Field</th>
+                <th>Value</th>
+                <th>Host</th>
+                <th>Proto</th>
+                <th>Time</th>
+                <th>Session</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${items.map((c,i) => `
+                <tr onclick="switchTab('capture');setTimeout(()=>selectSession('${c.sid}'),50)">
+                  <td><span class="hv-badge ${badgeClass}">${escHtml(c.label)}</span></td>
+                  <td style="color:var(--text2)">${escHtml(c.field)}</td>
+                  <td>
+                    ${redact
+                      ? `<span class="hv-blurred hv-val" id="hv-val-${i}" onclick="event.stopPropagation();this.classList.toggle('revealed')" title="Click to reveal">${escHtml(c.value)}</span>`
+                      : `<span class="hv-val">${escHtml(c.value)}</span>
+                         <button class="hv-copy" onclick="event.stopPropagation();navigator.clipboard.writeText('${escHtml(c.value)}');this.textContent='✓';setTimeout(()=>this.textContent='copy',1200)">copy</button>`
+                    }
+                  </td>
+                  <td style="color:var(--text2)">${escHtml(c.host)}</td>
+                  <td><span class="si-proto proto-${c.proto}">${c.proto}</span></td>
+                  <td style="color:var(--text3)">${c.ts}</td>
+                  <td style="color:var(--text3)">${c.sid}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  };
+
+  document.getElementById('hv-content').innerHTML =
+    renderGroup(high, 'High severity', 'hv-badge-high') +
+    renderGroup(med,  'Medium severity', 'hv-badge-med') +
+    renderGroup(low,  'Low severity', 'hv-badge-low');
+}
+
+function revealCred(i) {
+  const el = document.getElementById(`hv-val-${i}`);
+  if(el) el.classList.toggle('revealed');
+}
+
+
+// ── NETWORK TOPOLOGY MAP ──
+const NET_COLORS = {
+  HTTP:'#55cc55', HTTPS:'#5599ff', DNS:'#ffaa33',
+  FTP:'#ff5555', SMTP:'#cc77ff', TCP:'#aaaaaa'
+};
+
+let netNodes = [], netEdges = [], netPackets = [];
+let netVisibleProtos = new Set(['HTTP','HTTPS','DNS','FTP','SMTP','TCP']);
+let netAnimFrame = null, netPaused = false;
+let netDragging = null, netDragOffX = 0, netDragOffY = 0;
+let netHovered = null;
+
+function toggleNetProto(el, proto) {
+  if(netVisibleProtos.has(proto)) { netVisibleProtos.delete(proto); el.classList.remove('net-chip-on'); }
+  else { netVisibleProtos.add(proto); el.classList.add('net-chip-on'); }
+  buildNetGraph();
+}
+
+function netPause() {
+  netPaused = !netPaused;
+  document.getElementById('net-pause-btn').textContent = netPaused ? '▶ Resume' : '⏸ Pause';
+}
+
+function netReset() {
+  netNodes.forEach(n => { n.vx = (Math.random()-0.5)*2; n.vy = (Math.random()-0.5)*2; });
+}
+
+function buildNetGraph() {
+  if(!sessions.length) return;
+
+  const filtered = sessions.filter(s => netVisibleProtos.has(s.proto));
+  const hostMap = {};
+
+  filtered.forEach(s => {
+    const src = s.srcHost || s.src.split(':')[0];
+    const dst = s.dstHost || s.dst.split(':')[0];
+
+    if(!hostMap[src]) hostMap[src] = {id:src, label:src, sessions:[], type:'internal', connections:0};
+    if(!hostMap[dst]) hostMap[dst] = {id:dst, label:dst, sessions:[], type:'external', connections:0};
+
+    hostMap[src].sessions.push(s);
+    hostMap[dst].sessions.push(s);
+    hostMap[src].connections++;
+    hostMap[dst].connections++;
+    hostMap[src].type = src.startsWith('10.')||src.startsWith('192.')||src.startsWith('172.')||src==='workstation-7'||src==='mail-relay' ? 'internal' : 'external';
+    hostMap[dst].type = dst.startsWith('10.')||dst.startsWith('192.')||dst.startsWith('172.')||dst==='workstation-7'||dst==='mail-relay' ? 'internal' : 'external';
+  });
+
+  const canvas = document.getElementById('net-canvas');
+  const W = canvas.clientWidth || 900;
+  const H = canvas.clientHeight || 500;
+
+  // Keep existing positions for nodes we already have
+  const existingPositions = {};
+  netNodes.forEach(n => existingPositions[n.id] = {x:n.x, y:n.y, vx:n.vx, vy:n.vy});
+
+  netNodes = Object.values(hostMap).map(h => {
+    const existing = existingPositions[h.id];
+    return {
+      ...h,
+      x: existing ? existing.x : W/2 + (Math.random()-0.5)*W*0.6,
+      y: existing ? existing.y : H/2 + (Math.random()-0.5)*H*0.6,
+      vx: existing ? existing.vx : (Math.random()-0.5)*2,
+      vy: existing ? existing.vy : (Math.random()-0.5)*2,
+      glow: 0,
+      radius: 8 + Math.min(h.connections * 3, 20),
+    };
+  });
+
+  // Build edges
+  const edgeMap = {};
+  filtered.forEach(s => {
+    const src = s.srcHost || s.src.split(':')[0];
+    const dst = s.dstHost || s.dst.split(':')[0];
+    const key = src + '|||' + dst;
+    if(!edgeMap[key]) edgeMap[key] = {src, dst, sessions:[], protos:new Set()};
+    edgeMap[key].sessions.push(s);
+    edgeMap[key].protos.add(s.proto);
+  });
+  netEdges = Object.values(edgeMap);
+
+  // Spawn initial packets
+  netPackets = [];
+  filtered.slice(0, 30).forEach((s, i) => {
+    setTimeout(() => spawnPacket(s), i * 80);
+  });
+
+  // Update legend
+  const protos = [...new Set(filtered.map(s=>s.proto))];
+  document.getElementById('net-legend').innerHTML = protos.map(p => `
+    <div class="net-legend-item">
+      <div class="net-legend-dot" style="background:${NET_COLORS[p]};box-shadow:0 0 4px ${NET_COLORS[p]};"></div>
+      <span>${p}</span>
+    </div>
+  `).join('');
+
+  // Stats
+  document.getElementById('net-stats').innerHTML = `
+    <div class="net-stat-pill">Nodes: <b>${netNodes.length}</b></div>
+    <div class="net-stat-pill">Edges: <b>${netEdges.length}</b></div>
+    <div class="net-stat-pill">Sessions: <b>${filtered.length}</b></div>
+  `;
+}
+
+function spawnPacket(session) {
+  if(!session) return;
+  const src = session.srcHost || session.src.split(':')[0];
+  const dst = session.dstHost || session.dst.split(':')[0];
+  const srcNode = netNodes.find(n=>n.id===src);
+  const dstNode = netNodes.find(n=>n.id===dst);
+  if(!srcNode || !dstNode) return;
+
+  netPackets.push({
+    src, dst, proto: session.proto,
+    sid: session.id,
+    t: 0, speed: 0.008 + Math.random()*0.006,
+    color: NET_COLORS[session.proto] || '#888',
+    size: 3 + Math.random()*2,
+    alerts: session.alerts.filter(a=>a.sev==='high').length > 0,
+  });
+
+  // Glow source node
+  if(srcNode) srcNode.glow = 1.0;
+}
+
+function renderTimeline() { buildNetGraph(); startNetLoop(); }
+
+function startNetLoop() {
+  if(netAnimFrame) cancelAnimationFrame(netAnimFrame);
+  const canvas = document.getElementById('net-canvas');
+  if(!canvas) return;
+
+  const wrap = canvas.parentElement;
+  canvas.width = wrap.clientWidth;
+  canvas.height = wrap.clientHeight;
+
+  const loop = () => {
+    if(!document.getElementById('tab-timeline').classList.contains('active')) {
+      cancelAnimationFrame(netAnimFrame);
+      return;
+    }
+    netAnimFrame = requestAnimationFrame(loop);
+    if(!netPaused) {
+      updatePhysics(canvas.width, canvas.height);
+      updatePackets();
+    }
+    drawNet(canvas);
+  };
+  loop();
+}
+
+function updatePhysics(W, H) {
+  const REPEL = 3000, ATTRACT = 0.002, DAMP = 0.88, EDGE_FORCE = 0.05;
+
+  netNodes.forEach(n => {
+    let fx = 0, fy = 0;
+
+    // Repulsion between nodes
+    netNodes.forEach(m => {
+      if(m === n) return;
+      const dx = n.x - m.x, dy = n.y - m.y;
+      const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+      const force = REPEL / (dist * dist);
+      fx += (dx/dist) * force;
+      fy += (dy/dist) * force;
+    });
+
+    // Attraction along edges
+    netEdges.forEach(e => {
+      let other = null;
+      if(e.src === n.id) other = netNodes.find(m=>m.id===e.dst);
+      if(e.dst === n.id) other = netNodes.find(m=>m.id===e.src);
+      if(!other) return;
+      const dx = other.x - n.x, dy = other.y - n.y;
+      const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+      const ideal = 150 + n.radius + other.radius;
+      const stretch = dist - ideal;
+      fx += (dx/dist) * stretch * ATTRACT * 50;
+      fy += (dy/dist) * stretch * ATTRACT * 50;
+    });
+
+    // Center gravity
+    fx += (W/2 - n.x) * 0.002;
+    fy += (H/2 - n.y) * 0.002;
+
+    n.vx = (n.vx + fx * 0.01) * DAMP;
+    n.vy = (n.vy + fy * 0.01) * DAMP;
+
+    // Clamp velocity
+    const speed = Math.sqrt(n.vx*n.vx + n.vy*n.vy);
+    if(speed > 3) { n.vx *= 3/speed; n.vy *= 3/speed; }
+
+    if(netDragging !== n) {
+      n.x += n.vx;
+      n.y += n.vy;
+    }
+
+    // Bounce off edges
+    const pad = n.radius + 20;
+    if(n.x < pad) { n.x = pad; n.vx = Math.abs(n.vx); }
+    if(n.x > W-pad) { n.x = W-pad; n.vx = -Math.abs(n.vx); }
+    if(n.y < pad) { n.y = pad; n.vy = Math.abs(n.vy); }
+    if(n.y > H-pad) { n.y = H-pad; n.vy = -Math.abs(n.vy); }
+
+    // Decay glow
+    if(n.glow > 0) n.glow = Math.max(0, n.glow - 0.02);
+  });
+}
+
+function updatePackets() {
+  // Advance packets
+  netPackets.forEach(p => { p.t += p.speed; });
+
+  // Remove finished packets, respawn some
+  const done = netPackets.filter(p => p.t >= 1);
+  netPackets = netPackets.filter(p => p.t < 1);
+
+  // Glow destination on arrival
+  done.forEach(p => {
+    const dst = netNodes.find(n=>n.id===p.dst);
+    if(dst) dst.glow = 0.8;
+  });
+
+  // Keep spawning packets from sessions
+  if(sessions.length && netPackets.length < 20 && !netPaused) {
+    const filtered = sessions.filter(s => netVisibleProtos.has(s.proto));
+    if(filtered.length) {
+      const s = filtered[Math.floor(Math.random() * filtered.length)];
+      spawnPacket(s);
+    }
+  }
+}
+
+function drawNet(canvas) {
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const isDark = !document.documentElement.getAttribute('data-theme') ||
+                  document.documentElement.getAttribute('data-theme') === 'dark';
+
+  ctx.fillStyle = isDark ? '#000000' : '#f9f9f7';
+  ctx.fillRect(0, 0, W, H);
+
+  if(!netNodes.length) {
+    ctx.fillStyle = isDark ? '#333' : '#999';
+    ctx.font = '14px DM Sans, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Load a capture file to see the network topology', W/2, H/2);
+    return;
+  }
+
+  // Draw edges
+  netEdges.forEach(e => {
+    const src = netNodes.find(n=>n.id===e.src);
+    const dst = netNodes.find(n=>n.id===e.dst);
+    if(!src || !dst) return;
+
+    // Check if any visible proto uses this edge
+    const visibleProtos = [...e.protos].filter(p=>netVisibleProtos.has(p));
+    if(!visibleProtos.length) return;
+
+    const col = NET_COLORS[visibleProtos[0]] || '#888';
+    ctx.beginPath();
+    ctx.moveTo(src.x, src.y);
+    ctx.lineTo(dst.x, dst.y);
+    ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  });
+
+  // Draw packets
+  netPackets.forEach(p => {
+    const src = netNodes.find(n=>n.id===p.src);
+    const dst = netNodes.find(n=>n.id===p.dst);
+    if(!src || !dst) return;
+    if(!netVisibleProtos.has(p.proto)) return;
+
+    const x = src.x + (dst.x - src.x) * p.t;
+    const y = src.y + (dst.y - src.y) * p.t;
+
+    // Glow trail
+    const grad = ctx.createRadialGradient(x, y, 0, x, y, p.size * 4);
+    grad.addColorStop(0, p.color + 'aa');
+    grad.addColorStop(1, p.color + '00');
+    ctx.beginPath();
+    ctx.arc(x, y, p.size * 4, 0, Math.PI * 2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Core dot
+    ctx.beginPath();
+    ctx.arc(x, y, p.size, 0, Math.PI * 2);
+    ctx.fillStyle = p.alerts ? '#ff5555' : p.color;
+    ctx.fill();
+
+    // Alert dot extra ring
+    if(p.alerts) {
+      ctx.beginPath();
+      ctx.arc(x, y, p.size + 3, 0, Math.PI * 2);
+      ctx.strokeStyle = '#ff555566';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+  });
+
+  // Draw nodes
+  netNodes.forEach(n => {
+    const isHovered = netHovered === n;
+    const col = n.type === 'internal' ? (isDark?'#5599ff':'#1a52a8') : (isDark?'#aaaaaa':'#555555');
+    const r = n.radius;
+
+    // Glow ring
+    if(n.glow > 0) {
+      const g = ctx.createRadialGradient(n.x, n.y, r, n.x, n.y, r + 20 * n.glow);
+      g.addColorStop(0, col + Math.round(n.glow * 99).toString(16).padStart(2,'0'));
+      g.addColorStop(1, col + '00');
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, r + 20 * n.glow, 0, Math.PI*2);
+      ctx.fillStyle = g;
+      ctx.fill();
+    }
+
+    // Node circle
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, r, 0, Math.PI*2);
+    ctx.fillStyle = isDark ? '#111111' : '#ffffff';
+    ctx.fill();
+    ctx.strokeStyle = isHovered ? (isDark?'#ffffff':'#000000') : col;
+    ctx.lineWidth = isHovered ? 2 : 1.5;
+    ctx.stroke();
+
+    // Inner dot
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, r * 0.35, 0, Math.PI*2);
+    ctx.fillStyle = col;
+    ctx.fill();
+
+    // Label
+    const label = n.label.length > 16 ? n.label.slice(0,14)+'…' : n.label;
+    ctx.font = `${isHovered?'500 ':''}12px DM Sans, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = isDark ? (isHovered?'#ffffff':'#888888') : (isHovered?'#000000':'#666666');
+    ctx.fillText(label, n.x, n.y + r + 14);
+  });
+}
+
+// Mouse interaction
+function initNetMouse() {
+  const canvas = document.getElementById('net-canvas');
+  if(!canvas || canvas._netMouseInited) return;
+  canvas._netMouseInited = true;
+
+  const getNode = (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    return netNodes.find(n => Math.sqrt((n.x-mx)**2+(n.y-my)**2) < n.radius + 8);
+  };
+
+  canvas.addEventListener('mousedown', e => {
+    const n = getNode(e);
+    if(n) { netDragging = n; n.vx = 0; n.vy = 0; }
+  });
+
+  canvas.addEventListener('mousemove', e => {
+    const rect = canvas.getBoundingClientRect();
+    if(netDragging) {
+      netDragging.x = e.clientX - rect.left;
+      netDragging.y = e.clientY - rect.top;
+    }
+    const hov = getNode(e);
+    if(hov !== netHovered) {
+      netHovered = hov;
+      canvas.style.cursor = hov ? 'pointer' : 'default';
+      const info = document.getElementById('net-info');
+      if(hov) {
+        const sessList = sessions.filter(s =>
+          (s.srcHost||s.src.split(':')[0])===hov.id ||
+          (s.dstHost||s.dst.split(':')[0])===hov.id
+        );
+        const alerts = sessList.reduce((a,s)=>a+s.alerts.filter(x=>x.sev==='high').length,0);
+        const protos = [...new Set(sessList.map(s=>s.proto))].join(', ');
+        const bytes = sessList.reduce((a,s)=>a+(s.bytes?.req||0)+(s.bytes?.res||0),0);
+        info.style.display = 'block';
+        info.innerHTML = `
+          <div class="net-info-title">${hov.label}</div>
+          <div class="net-info-row">Type <span>${hov.type}</span></div>
+          <div class="net-info-row">Sessions <span>${sessList.length}</span></div>
+          <div class="net-info-row">Protocols <span>${protos||'—'}</span></div>
+          <div class="net-info-row">Total bytes <span>${formatBytes(bytes)}</span></div>
+          ${alerts?`<div class="net-info-row" style="color:var(--red);">High alerts <span style="color:var(--red);">${alerts}</span></div>`:''}
+        `;
+      } else {
+        info.style.display = 'none';
+      }
+    }
+  });
+
+  canvas.addEventListener('mouseup', () => { netDragging = null; });
+  canvas.addEventListener('mouseleave', () => {
+    netDragging = null;
+    netHovered = null;
+    document.getElementById('net-info').style.display = 'none';
+  });
+
+  canvas.addEventListener('click', e => {
+    const n = getNode(e);
+    if(n && n.sessions?.length) {
+      switchTab('capture');
+      setTimeout(()=>selectSession(n.sessions[0].id), 50);
+    }
+  });
+}
+
+// drag/drop
+const dz=document.getElementById('drop-zone');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag-over');});
+dz.addEventListener('dragleave',()=>dz.classList.remove('drag-over'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag-over');handleFileUpload(e.dataTransfer.files);});
+</script>
+</body>
+</html>
