@@ -1744,7 +1744,7 @@ function highlightMatch(text,q) {
 function switchTab(name) {
   document.querySelectorAll('.tb-btn').forEach(b=>b.classList.toggle('active',b.textContent.toLowerCase().includes(name)));
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id===`tab-${name}`));
-  if(name==='heatmap') setTimeout(renderHeatmap, 50);
+  if(name==='heatmap') setTimeout(renderHeatmap, 150);
   if(name==='harvester') setTimeout(renderHarvester, 50);
   if(name==='timeline'){setTimeout(()=>{renderTimeline();initNetMouse();},50);}
 }
@@ -1973,15 +1973,15 @@ function renderWorldMap(countries, ips) {
       attributionControl: true,
     });
 
-    // Dark tile layer
+    // English-only tile layer (Stadia uses OSM English labels)
     L.tileLayer(
       isDark
-        ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-        : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+        ? 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png'
+        : 'https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png',
       {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
-        subdomains: 'abcd',
-        maxZoom: 19,
+        attribution: '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        maxZoom: 20,
+        language: 'en',
       }
     ).addTo(_leafletMap);
 
@@ -2018,8 +2018,13 @@ function renderWorldMap(countries, ips) {
     }).addTo(_leafletMarkers);
   });
 
-  // Force map to recalculate size (needed when tab switches)
-  setTimeout(() => _leafletMap.invalidateSize(), 100);
+  // Force map to recalculate size after tab becomes visible
+  setTimeout(() => {
+    _leafletMap.invalidateSize({ animate: false });
+  }, 200);
+  setTimeout(() => {
+    _leafletMap.invalidateSize({ animate: false });
+  }, 600);
 }
 
 // Re-render map on dark mode change
