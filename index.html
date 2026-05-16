@@ -1938,6 +1938,17 @@ function renderHeatmap() {
 let _leafletMap = null;
 let _leafletMarkers = null;
 
+function makeCircleIcon(col, size, pulse) {
+  const r = size / 2;
+  const ring = pulse ? `<circle cx="16" cy="16" r="${r+6}" fill="${col}" fill-opacity="0.12"/>` : '';
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+    ${ring}
+    <circle cx="16" cy="16" r="${r+2}" fill="${col}" fill-opacity="0.2"/>
+    <circle cx="16" cy="16" r="${r}" fill="${col}" fill-opacity="0.95" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+  </svg>`;
+  return L.divIcon({ html: svg, className: '', iconSize: [32, 32], iconAnchor: [16, 16], popupAnchor: [0, -18] });
+}
+
 function renderWorldMap(countries, ips) {
   const mapEl = document.getElementById('hm-map');
   if(!mapEl) return;
@@ -1945,35 +1956,23 @@ function renderWorldMap(countries, ips) {
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark' ||
     (!document.documentElement.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
-  const riskColor = {high:'#ff5555', med:'#ffaa33', clean:'#44cc66', unknown:'#888888'};
-  const riskLabel = {high:'HIGH RISK', med:'MEDIUM', clean:'CLEAN', unknown:'UNKNOWN'};
+  const riskColor = { high:'#ff5555', med:'#ffaa33', clean:'#55cc55', unknown:'#888888' };
+  const riskLabel = { high:'HIGH RISK', med:'MEDIUM', clean:'CLEAN', unknown:'UNKNOWN' };
 
-  function makeIcon(col) {
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="32" viewBox="0 0 24 32">
-      <path d="M12 0C5.4 0 0 5.4 0 12c0 7.2 12 20 12 20s12-12.8 12-20C24 5.4 18.6 0 12 0z" fill="${col}" fill-opacity="0.92"/>
-      <circle cx="12" cy="12" r="5" fill="white" fill-opacity="0.9"/>
-    </svg>`;
-    return L.divIcon({
-      html: svg,
-      className: '',
-      iconSize: [24, 32],
-      iconAnchor: [12, 32],
-      popupAnchor: [0, -34],
-    });
-  }
-
-  // Init map once
   if(!_leafletMap) {
     _leafletMap = L.map('hm-map', {
       center: [20, 10],
       zoom: 2,
       minZoom: 2,
-      maxZoom: 10,
+      maxZoom: 18,
       zoomControl: true,
       attributionControl: true,
+      zoomSnap: 1,
+      zoomDelta: 1,
+      wheelDebounceTime: 100,
+      wheelPxPerZoomLevel: 100,
     });
 
-    // English-only tile layer (Stadia uses OSM English labels)
     L.tileLayer(
       isDark
         ? 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png'
@@ -1981,7 +1980,8 @@ function renderWorldMap(countries, ips) {
       {
         attribution: '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
         maxZoom: 20,
-        language: 'en',
+        updateWhenIdle: true,
+        updateWhenZooming: false,
       }
     ).addTo(_leafletMap);
 
@@ -1990,41 +1990,28 @@ function renderWorldMap(countries, ips) {
     _leafletMarkers.clearLayers();
   }
 
-  // Plot IP dots
   ips.forEach(ip => {
     if(ip.lat === 0 && ip.lon === 0) return;
-    const col = riskColor[ip.risk] || '#888888';
-    const marker = L.marker([ip.lat, ip.lon], { icon: makeIcon(col) })
+
+    const isLocal = ip.cc === 'LO' || ip.ip.match(/^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/);
+    const col = isLocal ? '#44ee77' : (riskColor[ip.risk] || '#888888');
+    const label = isLocal ? 'LOCAL HOST' : (riskLabel[ip.risk] || '—');
+    const size = isLocal ? 10 : (ip.risk === 'high' ? 9 : 7);
+
+    L.marker([ip.lat, ip.lon], { icon: makeCircleIcon(col, size, ip.risk === 'high') })
       .bindPopup(`
-        <div style="font-family:monospace;font-size:12px;line-height:2;min-width:160px;">
+        <div style="font-family:monospace;font-size:12px;line-height:1.9;min-width:160px;">
           <div style="font-size:13px;font-weight:bold;margin-bottom:4px;">${ip.ip}</div>
           <div>${ip.flag} ${ip.country}</div>
           <div>Sessions: <b>${ip.count}</b></div>
-          <div>Risk: <span style="color:${col};font-weight:bold;">${riskLabel[ip.risk]||'—'}</span></div>
+          <div>Type: <span style="color:${col};font-weight:bold;">${label}</span></div>
         </div>
-      `, { maxWidth: 220 });
-    _leafletMarkers.addLayer(marker);
+      `, { maxWidth: 220 })
+      .addTo(_leafletMarkers);
   });
 
-  // Pulse rings for high-risk IPs
-  ips.filter(ip => ip.risk === 'high' && ip.lat !== 0).forEach(ip => {
-    L.circleMarker([ip.lat, ip.lon], {
-      radius: 28,
-      fillColor: 'transparent',
-      color: '#ff5555',
-      weight: 1.5,
-      opacity: 0.4,
-      fillOpacity: 0,
-    }).addTo(_leafletMarkers);
-  });
-
-  // Force map to recalculate size after tab becomes visible
-  setTimeout(() => {
-    _leafletMap.invalidateSize({ animate: false });
-  }, 200);
-  setTimeout(() => {
-    _leafletMap.invalidateSize({ animate: false });
-  }, 600);
+  setTimeout(() => { _leafletMap.invalidateSize({ animate: false }); }, 250);
+  setTimeout(() => { _leafletMap.invalidateSize({ animate: false }); }, 700);
 }
 
 // Re-render map on dark mode change
