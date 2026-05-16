@@ -1862,7 +1862,10 @@ function getGeo(ip) {
 }
 
 function renderHeatmap() {
-  if(!sessions.length) return;
+  if(!sessions.length) {
+    renderWorldMap([], []);
+    return;
+  }
 
   // Aggregate geo data
   const countryMap = {};
@@ -1930,52 +1933,106 @@ function renderHeatmap() {
     '<tr><td colspan="4" class="hm-empty">No external connections</td></tr>';
 }
 
-function renderWorldMap(countries, ips) {
+let _worldGeo = null;
+
+async function renderWorldMap(countries, ips) {
   const mapEl = document.getElementById('hm-map');
   if(!mapEl) return;
 
-  const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const oceanColor = isDark ? '#1a1a18' : '#f0f4f8';
-  const landColor  = isDark ? '#2a2a27' : '#e8e8e2';
-  const borderColor= isDark ? '#3a3a36' : '#d0d0c8';
-  const textColor  = isDark ? '#9a9a92' : '#888880';
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark' ||
+    (!document.documentElement.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
-  // Simple equirectangular projection
-  const W = mapEl.clientWidth || 900;
+  const oceanColor  = isDark ? '#0a0a0a' : '#e8f0f8';
+  const landColor   = isDark ? '#1e1e1e' : '#d4d4cc';
+  const borderColor = isDark ? '#333333' : '#b8b8b0';
+  const riskDotColor = {high:'#ff5555', med:'#ffaa33', clean:'#55cc55', unknown:'#888888'};
+
+  const W = mapEl.clientWidth || 960;
   const H = 420;
 
-  // Build country intensity map
-  const maxCount = Math.max(1, ...countries.map(c=>c.count));
-  const intensityMap = {};
-  countries.forEach(c=>{ intensityMap[c.cc] = c.count/maxCount; });
+  mapEl.innerHTML = `<svg id="hm-svg" width="100%" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+    <rect width="${W}" height="${H}" fill="${oceanColor}"/>
+    <g id="hm-land"></g>
+    <g id="hm-dots"></g>
+  </svg>`;
 
-  // Dot colors for IPs
-  const riskDotColor = {high:'#cc3333',med:'#cc8800',clean:'#2a7a2a',unknown:'#888'};
-
-  function latLonToXY(lat, lon) {
+  function project(lat, lon) {
     const x = ((lon + 180) / 360) * W;
     const y = ((90 - lat) / 180) * H;
-    return [Math.round(x), Math.round(y)];
+    return [x, y];
   }
 
-  function intensityToColor(intensity, isDark) {
-    if(isDark) {
-      if(intensity>0.8) return '#4a8ac0';
-      if(intensity>0.6) return '#3a6a96';
-      if(intensity>0.4) return '#2a4a6a';
-      if(intensity>0.2) return '#1a3050';
-      return '#102030';
-    } else {
-      if(intensity>0.8) return '#1a52a8';
-      if(intensity>0.6) return '#3a72c8';
-      if(intensity>0.4) return '#6a9ad8';
-      if(intensity>0.2) return '#9abce8';
-      return '#c8daf4';
+  function ringToPath(ring) {
+    return ring.map((pt,i) => {
+      const [x,y] = project(pt[1], pt[0]);
+      return (i===0?'M':'L')+x.toFixed(1)+','+y.toFixed(1);
+    }).join(' ') + ' Z';
+  }
+
+  function geoToPath(geometry) {
+    if(!geometry) return '';
+    const paths = [];
+    const process = (type, coords) => {
+      if(type === 'Polygon') {
+        paths.push(coords.map(ringToPath).join(' '));
+      } else if(type === 'MultiPolygon') {
+        coords.forEach(poly => poly.forEach(ring => paths.push(ringToPath(ring))));
+      }
+    };
+    process(geometry.type, geometry.coordinates);
+    return paths.join(' ');
+  }
+
+  if(!_worldGeo) {
+    try {
+      const res = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
+      const topo = await res.json();
+      // Convert TopoJSON to GeoJSON manually
+      const arcs = topo.arcs;
+      function decodeArc(arcIdx) {
+        const reversed = arcIdx < 0;
+        const arc = arcs[reversed ? ~arcIdx : arcIdx];
+        let x=0, y=0;
+        const pts = arc.map(([dx,dy]) => { x+=dx; y+=dy; return [x,y]; });
+        if(reversed) pts.reverse();
+        // Scale from TopoJSON transform
+        const s = topo.transform?.scale||[1,1];
+        const t = topo.transform?.translate||[0,0];
+        return pts.map(([px,py]) => [px*s[0]+t[0], py*s[1]+t[1]]);
+      }
+      function topoRing(arcs_list) {
+        return arcs_list.flatMap(decodeArc);
+      }
+      _worldGeo = topo.objects.countries.geometries.map(g => {
+        const coords = g.type === 'Polygon'
+          ? g.arcs.map(topoRing)
+          : g.arcs.map(poly => poly.map(topoRing));
+        return { type: g.type, coordinates: coords };
+      });
+    } catch(e) {
+      // Fallback: basic continent outlines
+      _worldGeo = [];
     }
   }
 
-  // Simplified country polygons as circles/dots on map
-  // We'll use known capital/center coordinates for major countries
+  const landG = document.getElementById('hm-land');
+  if(_worldGeo.length) {
+    const pathStr = _worldGeo.map(g => geoToPath(g)).join(' ');
+    landG.innerHTML = `<path d="${pathStr}" fill="${landColor}" stroke="${borderColor}" stroke-width="0.4" fill-rule="evenodd"/>`;
+  } else {
+    // Fallback visible continents
+    landG.innerHTML = `
+      <path d="M${project(72,-140).join(',')} L${project(50,-55).join(',')} L${project(25,-80).join(',')} L${project(15,-85).join(',')} L${project(30,-110).join(',')} L${project(60,-125).join(',')} Z" fill="${landColor}" stroke="${borderColor}" stroke-width="0.5"/>
+      <path d="M${project(-5,-35).join(',')} L${project(10,-75).join(',')} L${project(-55,-70).join(',')} Z" fill="${landColor}" stroke="${borderColor}" stroke-width="0.5"/>
+      <path d="M${project(71,10).join(',')} L${project(35,30).join(',')} L${project(36,28).join(',')} L${project(60,30).join(',')} Z" fill="${landColor}" stroke="${borderColor}" stroke-width="0.5"/>
+      <path d="M${project(37,25).join(',')} L${project(-35,20).join(',')} L${project(10,50).join(',')} Z" fill="${landColor}" stroke="${borderColor}" stroke-width="0.5"/>
+      <path d="M${project(75,30).join(',')} L${project(10,140).join(',')} L${project(60,140).join(',')} L${project(75,60).join(',')} Z" fill="${landColor}" stroke="${borderColor}" stroke-width="0.5"/>
+      <path d="M${project(-15,115).join(',')} L${project(-40,145).join(',')} L${project(-25,135).join(',')} Z" fill="${landColor}" stroke="${borderColor}" stroke-width="0.5"/>
+    `;
+  }
+
+  // Build intensity map for country highlighting
+  const maxCount = Math.max(1, ...countries.map(c=>c.count));
   const COUNTRY_CENTERS = {
     'US':[38,-97],'GB':[55,-3],'DE':[51,10],'FR':[46,2],'CN':[35,105],
     'RU':[60,100],'JP':[36,138],'AU':[-25,134],'IN':[20,77],'BR':[-10,-55],
@@ -1983,80 +2040,34 @@ function renderWorldMap(countries, ips) {
     'SA':[24,45],'AE':[24,54],'KR':[36,128],'ID':[-5,120],'AR':[-34,-64],
     'TR':[39,35],'IT':[42,12],'ES':[40,-4],'PL':[52,20],'NL':[52,5],
     'SE':[60,15],'NO':[60,10],'UA':[49,32],'TH':[15,101],'MY':[4,109],
+    'SG':[1,104],'PK':[30,70],'IL':[31,35],'NZ':[-41,174],'CL':[-35,-71],
   };
 
-  // Build dots for active IPs
-  const ipDots = ips.map(ip => {
-    const [lat, lon] = [ip.lat, ip.lon];
-    if(lat===0 && lon===0) return '';
-    const [x, y] = latLonToXY(lat, lon);
-    const col = riskDotColor[ip.risk] || '#888';
-    const r = Math.min(3 + ip.count * 2, 12);
-    return `<circle cx="${x}" cy="${y}" r="${r}" fill="${col}" fill-opacity="0.7" stroke="${col}" stroke-width="1">
-      <title>${ip.ip} — ${ip.country} (${ip.count} sessions)</title>
-    </circle>
-    <circle cx="${x}" cy="${y}" r="${r+4}" fill="${col}" fill-opacity="0.15"/>`;
-  }).join('');
+  // Draw dots for IPs
+  const dotsG = document.getElementById('hm-dots');
+  let dotsHtml = '';
 
-  // Country heat blobs
-  const countryBlobs = Object.entries(intensityMap).map(([cc, intensity]) => {
-    const coords = COUNTRY_CENTERS[cc];
-    if(!coords) return '';
-    const [lat, lon] = coords;
-    const [x, y] = latLonToXY(lat, lon);
-    const col = intensityToColor(intensity, isDark);
-    const r = 20 + intensity * 30;
-    return `<circle cx="${x}" cy="${y}" r="${r}" fill="${col}" fill-opacity="0.5"/>`;
-  }).join('');
+  // Country heat circles
+  countries.forEach(c => {
+    const coords = COUNTRY_CENTERS[c.cc];
+    if(!coords) return;
+    const [px,py] = project(coords[0], coords[1]);
+    const intensity = c.count/maxCount;
+    const r = 18 + intensity * 28;
+    dotsHtml += `<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${r}" fill="${isDark?'#5599ff':'#1a52a8'}" fill-opacity="${(0.12+intensity*0.25).toFixed(2)}"/>`;
+  });
 
-  // Simplified world outline paths (major landmasses as rough shapes)
-  const landPaths = `
-    <!-- North America -->
-    <path d="M80,60 L180,55 L190,80 L200,120 L180,160 L140,180 L110,200 L90,190 L70,170 L60,140 L65,100 Z" fill="${landColor}" stroke="${borderColor}" stroke-width="0.5"/>
-    <!-- South America -->
-    <path d="M150,200 L210,195 L230,220 L240,270 L220,320 L190,360 L160,360 L145,320 L140,270 L145,230 Z" fill="${landColor}" stroke="${borderColor}" stroke-width="0.5"/>
-    <!-- Europe -->
-    <path d="M380,50 L460,45 L480,60 L490,80 L470,100 L440,110 L400,105 L375,90 L370,70 Z" fill="${landColor}" stroke="${borderColor}" stroke-width="0.5"/>
-    <!-- Africa -->
-    <path d="M390,115 L460,110 L490,130 L500,170 L510,220 L500,280 L470,320 L430,330 L400,310 L380,270 L370,220 L375,170 L380,140 Z" fill="${landColor}" stroke="${borderColor}" stroke-width="0.5"/>
-    <!-- Asia -->
-    <path d="M470,45 L680,40 L720,60 L740,90 L730,130 L690,150 L640,160 L580,165 L520,150 L490,130 L480,100 L470,70 Z" fill="${landColor}" stroke="${borderColor}" stroke-width="0.5"/>
-    <!-- Australia -->
-    <path d="M640,240 L730,235 L760,250 L770,280 L750,310 L700,320 L650,310 L630,285 L625,260 Z" fill="${landColor}" stroke="${borderColor}" stroke-width="0.5"/>
-    <!-- Greenland -->
-    <path d="M200,20 L260,18 L270,35 L255,50 L220,52 L200,40 Z" fill="${landColor}" stroke="${borderColor}" stroke-width="0.5"/>
-  `;
+  // IP dots on top
+  ips.forEach(ip => {
+    if(ip.lat===0 && ip.lon===0) return;
+    const [px,py] = project(ip.lat, ip.lon);
+    const col = riskDotColor[ip.risk]||'#888';
+    const r = Math.min(4 + ip.count * 1.5, 14);
+    dotsHtml += `<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${(r+5).toFixed(1)}" fill="${col}" fill-opacity="0.15"/>`;
+    dotsHtml += `<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${r.toFixed(1)}" fill="${col}" fill-opacity="0.85" stroke="${col}" stroke-width="1"><title>${ip.ip} — ${ip.country} (${ip.count} sessions)</title></circle>`;
+  });
 
-  // Grid lines
-  const gridLines = [];
-  for(let lon=-150; lon<=150; lon+=30) {
-    const [x1] = latLonToXY(90, lon);
-    gridLines.push(`<line x1="${x1}" y1="0" x2="${x1}" y2="${H}" stroke="${borderColor}" stroke-width="0.3" stroke-dasharray="2,4"/>`);
-  }
-  for(let lat=-60; lat<=60; lat+=30) {
-    const [,y1] = latLonToXY(lat, -180);
-    gridLines.push(`<line x1="0" y1="${y1}" x2="${W}" y2="${y1}" stroke="${borderColor}" stroke-width="0.3" stroke-dasharray="2,4"/>`);
-  }
-
-  // Labels
-  const labels = [
-    [38,-97,'US'],[55,-3,'EU'],[35,105,'AS'],[20,77,'IN'],
-    [-25,134,'AU'],[-10,-55,'SA'],[60,100,'RU']
-  ].map(([lat,lon,label])=>{
-    const [x,y] = latLonToXY(lat,lon);
-    return `<text x="${x}" y="${y}" text-anchor="middle" font-size="9" fill="${textColor}" font-family="DM Sans, sans-serif" opacity="0.6">${label}</text>`;
-  }).join('');
-
-  mapEl.innerHTML = `
-    <svg width="100%" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
-      <rect width="${W}" height="${H}" fill="${oceanColor}"/>
-      ${gridLines.join('')}
-      ${landPaths}
-      ${countryBlobs}
-      ${ipDots}
-      ${labels}
-    </svg>
-  `;
+  dotsG.innerHTML = dotsHtml;
 }
 
 // Re-render map on dark mode change
